@@ -27,7 +27,9 @@ public class Board extends JPanel
     private int lives = 3;
     private int level = 1;
     private Commons commons;
-    private String bg = "/landingScreen.jpg";
+    private String bg = "res/landingScreen.jpg";
+    private boolean[][] brickArray = new boolean[11][7];
+
 
     /**
      * Constructor. Configures refresh rate and initiates threads
@@ -60,10 +62,15 @@ public class Board extends JPanel
         commons = new Commons();
         bricks = new ArrayList<Brick>();
         ball.reset();
-        if (level == 1)
-            initializeBricks();
-        else
-            randomizeBricks();
+        randomizeBricks();
+    }
+
+    public void initStats() {
+        lives = 3;
+        points = 0;
+        level = 1;
+        playerIsDead = false;
+        inGame = true;
     }
 
     /**
@@ -119,6 +126,7 @@ public class Board extends JPanel
         drawBall(g2);
         drawPoints(g);
         drawLives(g);
+        drawLevel(g);
     }
 
     /**
@@ -130,7 +138,6 @@ public class Board extends JPanel
     public void drawTitles(Graphics g)
     {
         String drawnString = "Breakout";
-
         Font font = new Font("Bank Gothic", Font.BOLD, 35);
         FontMetrics metr = this.getFontMetrics(font);
 
@@ -138,19 +145,22 @@ public class Board extends JPanel
         g.setColor(letterColor);
         g.setFont(font);
         g.drawString(drawnString,
-            (commons.getWidth() - metr.stringWidth(drawnString)) / 2,
-            (int)(commons.getHeight() * 0.15));
+                (commons.getWidth() - metr.stringWidth(drawnString)) / 2,
+                (int) (commons.getHeight() * 0.15));
         drawnString = "AN IZAC JOINT";
         font = new Font("OCR A Std", Font.BOLD, 10);
         g.setFont(font);
-        g.drawString(drawnString, 6, (int)(commons.getHeight() * 0.98));
+        g.drawString(drawnString, 6, (int) (commons.getHeight() * 0.98));
         drawnString = "PRESS <SPACE> TO PLAY";
+
         font = new Font("OCR A Std", Font.BOLD, 15);
         metr = this.getFontMetrics(font);
         g.setFont(font);
         g.drawString(drawnString,
-            (commons.getWidth() - metr.stringWidth(drawnString)) / 2,
-            (int)(commons.getHeight() * 0.65));
+                (commons.getWidth() - metr.stringWidth(drawnString)) / 2,
+                (int) (commons.getHeight() * 0.65));
+        g.drawString("PRESS <CTRL> to train NEAT", (int)(commons.getWidth() * 0.03),
+                (int)(commons.getHeight() * 0.75));
     }
     /**
      * Event Listener. Determines when SPACE
@@ -160,7 +170,7 @@ public class Board extends JPanel
      *
      * @param e
      */
-    public void spaceToStart(KeyEvent e)
+    public void keyToStart(KeyEvent e)
     {
         int key = e.getKeyCode();
 
@@ -168,11 +178,7 @@ public class Board extends JPanel
         {
             if (playerIsDead)
             {
-                lives = 3;
-                points = 0;
-                level = 1;
-                playerIsDead = false;
-                inGame = true;
+                initStats();
                 gameInit();
             }
             if (!skippedMainMenu)
@@ -185,6 +191,13 @@ public class Board extends JPanel
                 gamePaused = !gamePaused;
                 inGame = true;
             }
+        }
+
+        if (key == KeyEvent.VK_CONTROL) {
+            if (!skippedMainMenu) {
+                System.out.println("NEAT, WIP");
+            }
+
         }
     }
 
@@ -251,6 +264,13 @@ public class Board extends JPanel
             (int)(commons.getHeight() * 0.98));
     }
 
+    public void drawLevel(Graphics g) {
+        Font font = new Font("OCR A Std", Font.PLAIN, 12);
+        g.setColor(Color.WHITE);
+        g.setFont(font);
+        g.drawString("LEVEL "+level, 7, (int)(commons.getHeight() * 0.93));
+    }
+
     /**
      * Draw game over message to screen
      *
@@ -262,13 +282,13 @@ public class Board extends JPanel
         g.setColor(Color.WHITE);
         g.setFont(font);
         g.drawString("GAME OVER",
-            (int)(commons.getWidth() * 0.17),
-            (int)(commons.getHeight() * 0.5));
+                (int) (commons.getWidth() * 0.17),
+                (int) (commons.getHeight() * 0.5));
         font = new Font("OCR A Std", Font.PLAIN, 11);
         g.setFont(font);
         g.drawString("Press <SPACE> to start a new game",
-            (int)(commons.getWidth() * 0.07),
-            (int)(commons.getHeight() * 0.55));
+                (int) (commons.getWidth() * 0.07),
+                (int) (commons.getHeight() * 0.55));
     }
 
     /**
@@ -375,18 +395,26 @@ public class Board extends JPanel
         int minBWidth = 38;
         int maxBWidth = 65;
         int newBWidth = r.nextInt(maxBWidth - minBWidth + 1) + minBWidth;
-        commons.setBWidth(newBWidth);
+        //commons.setBWidth(newBWidth);
         int randomInt;
-        for (int i=20; i < commons.getHeight()*0.4; i+=commons.getBHeight()+6)
+        for (int i=20, k = 0; i < commons.getHeight()*0.4; i+=commons.getBHeight()+6, k++)
         {
-            for (int j=10; j<commons.getWidth()-15; j += commons.getBWidth()+5)
+            for (int j=10, l = 0; j<commons.getWidth()-15; j += commons.getBWidth()+5, l++)
             {
                 // Generate int between 0 or 1
                 randomInt = r.nextInt(2);
-                if (randomInt == 1)
+                if (randomInt == 1) {
                     bricks.add(new Brick(j,i));
-
+                    brickArray[k][l] = true;
+                }
             }
+        }
+
+        for (int i = 0; i < brickArray.length; i++) {
+            for (int j = 0; j < brickArray[i].length; j++) {
+                System.out.print(brickArray[i][j] + " ");
+            }
+            System.out.println();
         }
     }
 
@@ -525,7 +553,7 @@ public class Board extends JPanel
         public void keyPressed(KeyEvent e)
         {
             paddle.keyPressed(e);
-            spaceToStart(e);
+            keyToStart(e);
             pauseGame(e);
         }
     }
