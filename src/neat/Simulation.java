@@ -19,8 +19,10 @@ public class Simulation implements Observer {
         private boolean gameWon;
         private boolean gameLost;
         private int lives;
+        private int score;
+        private int shots;
 
-        public ObservableArg(int i, int j, boolean brickState, int paddleX, int ballX, boolean gameWon, boolean gameLost, int lives) {
+        public ObservableArg(int i, int j, boolean brickState, int paddleX, int ballX, boolean gameWon, boolean gameLost, int lives, int score, int shots) {
             this.brickStateChanged = true;
             this.i = i;
             this.j = j;
@@ -30,15 +32,19 @@ public class Simulation implements Observer {
             this.gameLost = gameLost;
             this.gameWon = gameWon;
             this.lives = lives;
+            this.score = score;
+            this.shots = shots;
         }
 
-        public ObservableArg(int paddleX, int ballX, boolean gameWon, boolean gameLost, int lives) {
+        public ObservableArg(int paddleX, int ballX, boolean gameWon, boolean gameLost, int lives, int score, int shots) {
             this.brickStateChanged = false;
             this.paddleX = paddleX;
             this.ballX = ballX;
             this.gameLost = gameLost;
             this.gameWon = gameWon;
             this.lives = lives;
+            this.score = score;
+            this.shots = shots;
         }
 
         public boolean isBrickStateChanged() {

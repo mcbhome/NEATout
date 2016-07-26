@@ -12,9 +12,10 @@ public class NeuralNetwork {
     Neuron ballInputNeuron;
     Neuron rightOutputNeuron;
     Neuron leftOutputNeuron;
+    Genome genome;
 
     public NeuralNetwork(Genome g) {
-
+        this.genome = g;
         initInputDepths();
     }
 
@@ -110,5 +111,9 @@ public class NeuralNetwork {
             leftOutputNeuron.setDepth(Integer.MAX_VALUE);
             rightOutputNeuron.setDepth(Integer.MAX_VALUE);
         }
+    }
+
+    public Genome getGenome() {
+        return genome;
     }
 }
