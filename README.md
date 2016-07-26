@@ -1,4 +1,9 @@
-Breakout
+Breakout - NEAT
+The goal of this repository is to get a working version of NeuroEvolution of Augmenting Topologies (NEAT) running with a simple breakout clone from the original repository.
+When finished, there should be an additional GUI to show training time, number of networks, highest fitness etc.
+The whole thing is supposed to be serializable so the learning is persistent.
+
+For more information on NEAT, read this paper: http://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf
 ========
 
 This program is a reimplementation of the classic Breakout game, which was released in 1976 by Atari. The player bounces a ball on a paddle controlled by the keyboard, which bounces off the top and side walls of the screen. Rows of bricks exist at the top of the screen which are destroyed when the ball hits them. Points are awarded to the player for each brick destroyed and when all are destroyed, the next level, which is randomly generated, is presented. The player has 3 lives, which are lost when the ball touches the bottom of the screen. 
