@@ -1,11 +1,9 @@
-/**
+package Game; /**
 The Ball class includes variables which identify
 and describe the state of the ball, such as coordinates
 radius, vertical and horizontal speed, orientation etc.
  */
-import java.awt.*;
 import java.awt.geom.*;
-import javax.swing.*;
 
 public class Ball
 {

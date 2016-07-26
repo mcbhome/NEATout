@@ -1,6 +1,7 @@
 package neat;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -9,6 +10,11 @@ import java.util.Comparator;
  */
 public class Genome {
     private ArrayList<Neuron> nodeGenes;
+    private BrickInputNeuron[][] brickInputs;
+    private Neuron paddleInput;
+    private Neuron ballInput;
+    private Neuron leftOutput;
+    private Neuron rightOutput;
     private ArrayList<Connection> connectionGenes;
     private double fitness;
     private double sharedFitness;
@@ -17,13 +23,21 @@ public class Genome {
     public Genome() {
         nodeGenes = new ArrayList<Neuron>();
         connectionGenes = new ArrayList<Connection>();
+        brickInputs = new BrickInputNeuron[11][7];
         highestInnov = 0;
         fitness = 0;
         sharedFitness = 0;
     }
 
     public Genome(Genome parent) {
-        this.nodeGenes = new ArrayList<Neuron>(parent.getNodeGenes());
+        brickInputs = new BrickInputNeuron[11][7];
+
+        this.nodeGenes = new ArrayList<Neuron>();
+
+        for (Neuron n : parent.getNodeGenes()) {
+            this.addNode(new Neuron(n));
+        }
+
         this.connectionGenes = new ArrayList<Connection>();
 
         for (Connection c : parent.connectionGenes) {
@@ -159,10 +173,46 @@ public class Genome {
 
     public void addNode(Neuron n) {
         this.nodeGenes.add(n);
+
+        if (!(n.getType() == Neuron.Neuron_Type.HIDDEN)) {
+            if (n.getType() == Neuron.Neuron_Type.SENSOR_BRICK) {
+                BrickInputNeuron brick = (BrickInputNeuron) n;
+                this.brickInputs[brick.getI()][brick.getJ()] = brick;
+            } else if (n.getType() == Neuron.Neuron_Type.SENSOR_PADDLE) {
+                this.paddleInput = n;
+            } else if (n.getType() == Neuron.Neuron_Type.SENSOR_BALL) {
+                this.ballInput = n;
+            } else if (n.getType() == Neuron.Neuron_Type.OUTPUT_LEFT) {
+                this.leftOutput = n;
+            } else if (n.getType() == Neuron.Neuron_Type.OUTPUT_RIGHT) {
+                this.rightOutput = n;
+            }
+        }
     }
 
-    public void mutate() {
-
+    public void addAllNodes(Collection<? extends Neuron> neurons) {
+        for (Neuron n : neurons) {
+            this.nodeGenes.add(new Neuron(n));
+        }
     }
 
+    public BrickInputNeuron[][] getBrickInputNeurons() {
+        return brickInputs;
+    }
+
+    public Neuron getPaddleInputNeurons() {
+        return paddleInput;
+    }
+
+    public Neuron getBallInputNeurons() {
+        return ballInput;
+    }
+
+    public Neuron getLeftOutputNeurons() {
+        return leftOutput;
+    }
+
+    public Neuron getRightOutputNeurons() {
+        return rightOutput;
+    }
 }

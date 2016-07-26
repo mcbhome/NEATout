@@ -8,12 +8,12 @@ import java.util.HashMap;
  */
 class Neuron {
 
-    public enum Neuron_Type { SENSOR, HIDDEN, OUTPUT }
+    public enum Neuron_Type { SENSOR_BRICK, SENSOR_PADDLE, SENSOR_BALL, HIDDEN, OUTPUT_LEFT, OUTPUT_RIGHT }
     private final int id;
     private static int num_neurons = 0;
     private double output;
     private double input;
-    private static final double SIGMOID_STEEPNESS = 2.0;
+    private static final double SIGMOID_STEEPNESS = 5.0;
     private ArrayList<Connection> successors;
     private Neuron_Type type;
 
@@ -35,8 +35,21 @@ class Neuron {
         }
     }
 
+    public void setInput(double in) {
+        if (this.isInputNeuron())
+            this.input = in;
+    }
+
+    public boolean isInputNeuron() {
+        return this.type == Neuron_Type.SENSOR_BRICK || this.type == Neuron_Type.SENSOR_PADDLE || this.type == Neuron_Type.SENSOR_BALL;
+    }
+
+    public boolean isOutputNeuron() {
+        return this.type == Neuron_Type.OUTPUT_LEFT || this.type == Neuron_Type.OUTPUT_RIGHT;
+    }
+
     public void calculateOutput() {
-        if (this.type == Neuron_Type.SENSOR)
+        if (this.isInputNeuron())
             output = input;
         else
             output = calculateSigmoid(input);
@@ -50,7 +63,7 @@ class Neuron {
         return output;
     }
 
-    private void propagateOutputToSuccessors() {
+    public void propagateOutputToSuccessors() {
         for (Connection c : successors) {
             if (c.isEnabled())
                 c.getOut().addToInput(this.output * c.getWeight());
@@ -88,5 +101,9 @@ class Neuron {
 
     public void addSuccessor(Connection c) {
         successors.add(c);
+    }
+
+    public ArrayList<Connection> getSuccessors() {
+        return this.successors;
     }
 }

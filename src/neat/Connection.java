@@ -1,9 +1,11 @@
 package neat;
 
+import java.io.Serializable;
+
 /**
  * Created by qfi_2 on 25.07.2016.
  */
-public class Connection {
+public class Connection implements Serializable {
     private Neuron in;
     private Neuron out;
     private double weight;

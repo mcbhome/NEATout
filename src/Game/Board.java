@@ -1,4 +1,4 @@
-/**
+package Game; /**
 The Board class includes the game logic as well
 as game objects, such as the brick, paddle and ball,
 and all the methods to draw components to screen
@@ -142,7 +142,7 @@ public class Board extends JPanel
      */
     public void drawTitles(Graphics g)
     {
-        String drawnString = "Breakout";
+        String drawnString = "Game.Breakout";
         Font font = new Font("Bank Gothic", Font.BOLD, 35);
         FontMetrics metr = this.getFontMetrics(font);
 
@@ -374,7 +374,7 @@ public class Board extends JPanel
      * bricks to the ArrayList for the first
      * level.
      */
-    public void initializeBricks()
+    /*public void initializeBricks()
     {
         commons.setBWidth(38);
 
@@ -385,7 +385,7 @@ public class Board extends JPanel
                 bricks.add(new Brick(j,i));
             }
         }
-    }
+    } */
 
     /**
      * Randomly initialize brick position and add
@@ -408,7 +408,7 @@ public class Board extends JPanel
                 // Generate int between 0 or 1
                 randomInt = r.nextInt(2);
                 if (randomInt == 1) {
-                    bricks.add(new Brick(j,i));
+                    bricks.add(new Brick(j,i, new int[]{k,l}));
                     brickArray[k][l] = true;
                 }
             }
@@ -451,10 +451,14 @@ public class Board extends JPanel
         ArrayList<Brick> bricksCopy = new ArrayList<Brick>(bricks);
         for (Brick a : bricks)
         {
-            if ((ball.ballAsEllipse()).intersects(bricks.get(i).brickAsRect()))
+            Brick current = bricks.get(i);
+            if ((ball.ballAsEllipse()).intersects(current.brickAsRect()))
             {
+
                 ball.changeVerticalDirection();
-                bricks.get(i).destroyBrick();
+                current.destroyBrick();
+                int[] ids = current.getIds();
+                brickArray[ids[0]][ids[1]] = false;
                 //System.out.println("Brick "+i+" is destroyed!");
                 points+=100;
                 try
@@ -577,5 +581,4 @@ public class Board extends JPanel
             repaint();
         }
     }
-
 }

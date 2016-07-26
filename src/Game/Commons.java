@@ -1,3 +1,5 @@
+package Game;
+
 /**
 The Commons class contains all
 the variables which

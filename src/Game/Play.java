@@ -1,4 +1,4 @@
-/**
+package Game; /**
 The Play class acts an entry point
 for the game. It initializes the contents
 and dimensions of the frame, sets its position
@@ -14,7 +14,7 @@ public class Play extends JFrame
         Commons commons = new Commons();
 
         add(new Board());
-        setTitle("Breakout");
+        setTitle("Game.Breakout");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         getContentPane().setPreferredSize(new Dimension(300,400));
         pack();

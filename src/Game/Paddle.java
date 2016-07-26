@@ -1,11 +1,11 @@
-/**
+package Game; /**
 The paddle class contains the coordinates
 of the paddle as well as its horizontal speed.
  */
 import java.awt.*;
 import java.awt.event.*;
 
-class Paddle
+public class Paddle
 {
     private enum Direction {
         LEFT, RIGHT

@@ -1,14 +1,23 @@
 package neat;
 
+import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 
 /**
  * Created by qfi_2 on 25.07.2016.
  */
-public class Population {
+public class Population implements Serializable {
     private static int gen_count = 0;
     private static int conn_count = 0;
+
+    private static final int POPULATION_SIZE = 90;
+    private static final int POPULATION_DENOMINATOR = 3;
+
+    private static final int MAXIMUM_STALENESS = 20;
 
     private static final double COMPATIBILITY_THRESHOLD = 5;
     private static final double C1 = 1;
@@ -22,8 +31,12 @@ public class Population {
     private static final double EDGE_MUTATE_CHANCE = 0.05;
     private static final double EDGE_PERTURB_CHANCE = 0.9;
 
-    private static final double MATE_CHANCE = 0.7;
+    private static final double MATE_CHANCE = 0.75;
     private static final double REACTIVATE_CONNECTION_CHANCE = 0.25;
+    private static final double INTERSPECIES_MATING_CHANCE = 0.001;
+
+    private double top_fitness = 0;
+    private int staleness = 0;
 
     private int gen_id;
     private ArrayList<Genome> genomes;
@@ -43,8 +56,91 @@ public class Population {
         }
     }
 
-    public void newGeneration() {
+    public void initializePopulation(ArrayList<Neuron> inputNeurons, ArrayList<Neuron> outputNeurons) {
+        while (genomes.size() < POPULATION_SIZE) {
+            Genome g = new Genome();
+            g.addAllNodes(inputNeurons);
+            g.addAllNodes(outputNeurons);
+        }
+    }
 
+    public void newGeneration() {
+        gen_id = gen_count++;
+        cullSpecies();
+
+        ArrayList<Genome> offspring = new ArrayList<Genome>();
+        int genomeSize = genomes.size();
+
+        if (staleness >= MAXIMUM_STALENESS) {
+            stalenessCleanUp();
+        }
+
+        int offspringSize = POPULATION_SIZE - genomeSize;
+
+        double totalAverageFitness = 0;
+
+        for (Species s : species) {
+            totalAverageFitness += s.getAverageFitness();
+        }
+
+        for (Species s : species) {
+            int numOffspring = (int) ((s.getAverageFitness() / totalAverageFitness) * offspringSize + 0.5);
+
+            for (int i = 0; i < numOffspring; i++) {
+                offspring.add(produceOffspring(s));
+            }
+        }
+
+        for (Species s : species) {
+            Genome rnd = s.getGenomes().get((int) (Math.random() * genomes.size()));
+            s.setRepresentativeAndResetGenomes(rnd);
+        }
+
+        genomes.addAll(offspring);
+
+        for (Genome g : genomes) {
+            sortIntoSpecies(g);
+        }
+    }
+
+    private void cullSpecies() {
+        for (Species s : species) {
+            int numGenomesToRemove = s.getGenomes().size() / POPULATION_DENOMINATOR;
+            s.sortBySharedFitness();
+            Genome toRemove;
+
+            for (int i = 0; i < numGenomesToRemove; i++) {
+                if (s.getGenomes().size() > 1) {
+                    toRemove = s.getGenomes().get(0);
+                    s.getGenomes().remove(0);
+                    genomes.remove(toRemove);
+                }
+            }
+        }
+    }
+
+    // Remove all species but the top two
+    private void stalenessCleanUp() {
+        Collections.sort(species, new Comparator<Species>() {
+            @Override
+            public int compare(Species o1, Species o2) {
+                double f1 = o1.getAverageFitness();
+                double f2 = o2.getAverageFitness();
+
+                if (f1 < f2)
+                    return -1;
+                if (f2 > f1)
+                    return 1;
+                else
+                    return 0;
+            }
+        });
+
+        while (species.size() > 2) {
+            Species toRemove = species.get(0);
+            genomes.removeAll(toRemove.getGenomes());
+            species.remove(0);
+        }
     }
 
     public void sortIntoSpecies(Genome g) {
@@ -61,6 +157,15 @@ public class Population {
             }
 
             species.add(new Species(g));
+        }
+    }
+
+    public void updateFitness(Genome g, double fitness) {
+        g.setFitness(fitness);
+
+        if (fitness > top_fitness) {
+            top_fitness = fitness;
+            staleness = 0;
         }
     }
 
@@ -127,7 +232,38 @@ public class Population {
         return Math.max(a.getGenomeCount(), b.getGenomeCount());
     }
 
-    private void mate(Genome a, Genome b) {
+    private Genome produceOffspring(Species s) {
+        double rnd = Math.random();
+        ArrayList<Genome> genomes = s.getGenomes();
+
+        if (rnd < MATE_CHANCE) {
+            Genome child;
+            Genome parentA = genomes.get((int) (Math.random() * genomes.size()));
+            Genome parentB;
+
+            rnd = Math.random();
+
+            if (rnd < INTERSPECIES_MATING_CHANCE) {
+                Species s2 = species.get((int) (Math.random() * species.size()));
+                ArrayList<Genome> genomes2 = s2.getGenomes();
+
+                parentB = genomes2.get((int) (Math.random() * genomes2.size()));
+            } else {
+                parentB = genomes.get((int) (Math.random() * genomes.size()));
+            }
+
+            child = mate(parentA, parentB);
+            mutate(child);
+
+            return child;
+        } else {
+            Genome g = genomes.get((int) (Math.random() * genomes.size()));
+            mutate(g);
+            return g;
+        }
+    }
+
+    private Genome mate(Genome a, Genome b) {
         Genome child;
         Genome fitter;
         Genome lessFit;
@@ -220,8 +356,7 @@ public class Population {
             }
         }
 
-        genomes.add(child);
-        mutate(child);
+        return child;
     }
 
 
@@ -269,7 +404,7 @@ public class Population {
 
         do {
             in = validSourceNodes.get((int) (Math.random() * validSourceNodes.size()));
-        } while (in == null || in.getType() == Neuron.Neuron_Type.OUTPUT);
+        } while (in == null || in.isOutputNeuron());
 
         ArrayList<Neuron> validDestNodes = g.getNodesMinDepth(in.getDepth() + 1);
 
@@ -288,6 +423,10 @@ public class Population {
         for (Connection c : g.getConnectionGenes()) {
             c.setWeight(c.getWeight() + c.getWeight() * (Math.random() * PERTURBATION_FACTOR_BOUND - PERTURBATION_FACTOR_BOUND));
         }
+    }
+
+    public int getGenerationId() {
+        return gen_id;
     }
 
     // TODO: Check if exists
