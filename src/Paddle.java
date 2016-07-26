@@ -2,13 +2,15 @@
 The paddle class contains the coordinates
 of the paddle as well as its horizontal speed.
  */
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.*;
 
 class Paddle
 {
+    private enum Direction {
+        LEFT, RIGHT
+    }
+
     private int xLeft;
     private int pWidth;
     private int pHeight;
@@ -69,13 +71,21 @@ class Paddle
 
         if (key == KeyEvent.VK_LEFT)
         {
-            dx = -2;
-
+            changeDir(Direction.LEFT, 1);
         }
 
         if (key == KeyEvent.VK_RIGHT)
         {
-            dx = 2;
+            changeDir(Direction.RIGHT, 1);
+
+        }
+    }
+
+    public void changeDir(Direction dir, double speed) {
+        if (dir == Direction.LEFT) {
+            dx = (int) (-2 * speed);
+        } else if (dir == Direction.RIGHT) {
+            dx = (int) (2 * speed);
         }
     }
 
@@ -93,5 +103,4 @@ class Paddle
             dx = 0;
         }
     }
-
 }

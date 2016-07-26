@@ -18,6 +18,14 @@ public class Connection {
         enabled = true;
     }
 
+    public Connection(Connection c) {
+        this.in = c.in;
+        this.out = c.out;
+        this.weight = c.weight;
+        this.enabled = c.enabled;
+        this.innov = c.innov;
+    }
+
     public Neuron getIn() {
         return in;
     }
@@ -44,5 +52,9 @@ public class Connection {
 
     public void setWeight(double weight) {
         this.weight = weight;
+    }
+
+    public boolean sameStructure(Connection c) {
+        return this.in.equals(c.in) && this.out.equals(c.out);
     }
 }

@@ -62,6 +62,11 @@ public class Board extends JPanel
         commons = new Commons();
         bricks = new ArrayList<Brick>();
         ball.reset();
+        for (int i = 0; i < brickArray.length; i++) {
+            for (int j = 0; j < brickArray[i].length; j++) {
+                brickArray[i][j] = false;
+            }
+        }
         randomizeBricks();
     }
 
@@ -176,11 +181,9 @@ public class Board extends JPanel
 
         if (key == KeyEvent.VK_SPACE)
         {
-            if (playerIsDead)
-            {
-                initStats();
-                gameInit();
-            }
+            initStats();
+            gameInit();
+
             if (!skippedMainMenu)
             {
                 inGame = true;
@@ -391,11 +394,12 @@ public class Board extends JPanel
      */
     public void randomizeBricks()
     {
+
         Random r = new Random();
         int minBWidth = 38;
         int maxBWidth = 65;
         int newBWidth = r.nextInt(maxBWidth - minBWidth + 1) + minBWidth;
-        //commons.setBWidth(newBWidth);
+//      commons.setBWidth(newBWidth);
         int randomInt;
         for (int i=20, k = 0; i < commons.getHeight()*0.4; i+=commons.getBHeight()+6, k++)
         {
@@ -416,6 +420,7 @@ public class Board extends JPanel
             }
             System.out.println();
         }
+        System.out.println();
     }
 
     /**
@@ -431,16 +436,15 @@ public class Board extends JPanel
             adjustBallSpeedRelativeToPaddleIntersection();
         }
         // If ball hits a brick, remove it
-        removeBrick();
+        brickCollisionDetection();
         checkIfPlayerIsDead();
-        checkForVictory();
     }
 
     /**
      * Remove brick from the ArrayList
      * when it is hit by the ball.
      */
-    public void removeBrick()
+    public void brickCollisionDetection()
     {
         int i = 0;
         //ArrayList copy to avoid ConcurrentModificationError
@@ -465,6 +469,7 @@ public class Board extends JPanel
             i++;
         }
         bricks = bricksCopy;
+        checkForVictory();
     }
 
     /**

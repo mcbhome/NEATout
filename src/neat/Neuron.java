@@ -10,6 +10,7 @@ class Neuron {
 
     public enum Neuron_Type { SENSOR, HIDDEN, OUTPUT }
     private final int id;
+    private static int num_neurons = 0;
     private double output;
     private double input;
     private static final double SIGMOID_STEEPNESS = 2.0;
@@ -18,14 +19,31 @@ class Neuron {
 
     private int depth;
 
-    public Neuron (Neuron_Type type, int id) {
-        this.id = id;
+    public Neuron (Neuron_Type type) {
+        this.id = num_neurons++;
         this.type = type;
         successors = new ArrayList<Connection>();
     }
 
-    public double calculateOutput() {
-        return 1.0 / (1 - Math.exp(-1 * SIGMOID_STEEPNESS * input));
+    public Neuron(Neuron n) {
+        this.id = n.getId();
+        this.type = n.getType();
+        this.successors = new ArrayList<Connection>();
+
+        for (Connection c : n.successors) {
+            this.successors.add(new Connection(c));
+        }
+    }
+
+    public void calculateOutput() {
+        if (this.type == Neuron_Type.SENSOR)
+            output = input;
+        else
+            output = calculateSigmoid(input);
+    }
+
+    public double calculateSigmoid(double x) {
+        return 1.0 / (1 - Math.exp(-1 * SIGMOID_STEEPNESS * x));
     }
 
     public double getOutput() {
@@ -34,7 +52,8 @@ class Neuron {
 
     private void propagateOutputToSuccessors() {
         for (Connection c : successors) {
-            c.getOut().addToInput(this.output * c.getWeight());
+            if (c.isEnabled())
+                c.getOut().addToInput(this.output * c.getWeight());
         }
     }
 
@@ -56,5 +75,18 @@ class Neuron {
 
     public int getId() {
         return id;
+    }
+
+    public boolean hasSuccessor(Neuron n) {
+        for (Connection c : successors) {
+            if (c.getOut().equals(n))
+                return true;
+        }
+
+        return false;
+    }
+
+    public void addSuccessor(Connection c) {
+        successors.add(c);
     }
 }

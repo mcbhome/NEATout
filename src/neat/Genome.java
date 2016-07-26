@@ -8,8 +8,8 @@ import java.util.Comparator;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Genome {
-    ArrayList<Neuron> nodeGenes;
-    ArrayList<Connection> connectionGenes;
+    private ArrayList<Neuron> nodeGenes;
+    private ArrayList<Connection> connectionGenes;
     private double fitness;
     private double sharedFitness;
     private int highestInnov;
@@ -20,6 +20,17 @@ public class Genome {
         highestInnov = 0;
         fitness = 0;
         sharedFitness = 0;
+    }
+
+    public Genome(Genome parent) {
+        this.nodeGenes = new ArrayList<Neuron>(parent.getNodeGenes());
+        this.connectionGenes = new ArrayList<Connection>();
+
+        for (Connection c : parent.connectionGenes) {
+            this.connectionGenes.add(new Connection(c));
+        }
+
+        this.highestInnov = parent.highestInnov;
     }
 
 
@@ -50,10 +61,30 @@ public class Genome {
     }
 
     public void addConnectionGene(Connection c) {
-        connectionGenes.add(c);
-        sortConnectionGenes();
+        connectionGenes.add(new Connection(c));
+        addNodeFromConnectionGeneIfDoesntExist(c);
+        refreshConnectionStats(c.getInnov());
+    }
 
-        int innov = c.getInnov();
+    private void addNodeFromConnectionGeneIfDoesntExist(Connection c) {
+            Neuron in = c.getIn();
+            Neuron out = c.getOut();
+
+            if (!nodeGenes.contains(in)) {
+                this.addNode(new Neuron(in));
+            }
+            if (!nodeGenes.contains(out)) {
+                this.addNode(new Neuron(out));
+            }
+    }
+
+    public void addConnection(Neuron in, Neuron out, int innov, double weight) {
+        connectionGenes.add(new Connection(in, out, innov, weight));
+        refreshConnectionStats(innov);
+    }
+
+    public void refreshConnectionStats(int innov) {
+        sortConnectionGenes();
 
         if (innov > highestInnov)
             highestInnov = innov;
@@ -99,6 +130,39 @@ public class Genome {
 
     public void setSharedFitness(double sharedFitness) {
         this.sharedFitness = sharedFitness;
+    }
+
+    public ArrayList<Connection> getEnabledConnectionGenes() {
+        ArrayList<Connection> res = new ArrayList<Connection>();
+
+        for (Connection c : connectionGenes)
+            if (c.isEnabled())
+                res.add(c);
+
+        return res;
+    }
+
+    public ArrayList<Neuron> getNodeGenes() {
+        return this.nodeGenes;
+    }
+
+    public ArrayList<Neuron> getNodesMinDepth(int minDepth) {
+        ArrayList<Neuron> res = new ArrayList<Neuron>();
+
+        for (Neuron n : getNodeGenes()) {
+            if (n.getDepth() >= minDepth)
+                res.add(n);
+        }
+
+        return res;
+    }
+
+    public void addNode(Neuron n) {
+        this.nodeGenes.add(n);
+    }
+
+    public void mutate() {
+
     }
 
 }
