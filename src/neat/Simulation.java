@@ -10,77 +10,26 @@ import java.util.Observer;
  */
 public class Simulation implements Observer {
     public class ObservableArg {
-        private boolean brickStateChanged;
         private int i;
         private int j;
         private boolean brickState;
-        private int paddleX;
-        private int ballX;
-        private boolean gameWon;
-        private boolean gameLost;
-        private int lives;
-        private int score;
-        private int shots;
 
-        public ObservableArg(int i, int j, boolean brickState, int paddleX, int ballX, boolean gameWon, boolean gameLost, int lives, int score, int shots) {
-            this.brickStateChanged = true;
+        public ObservableArg(int i, int j, boolean brickState) {
             this.i = i;
             this.j = j;
             this.brickState = brickState;
-            this.paddleX = paddleX;
-            this.ballX = ballX;
-            this.gameLost = gameLost;
-            this.gameWon = gameWon;
-            this.lives = lives;
-            this.score = score;
-            this.shots = shots;
-        }
-
-        public ObservableArg(int paddleX, int ballX, boolean gameWon, boolean gameLost, int lives, int score, int shots) {
-            this.brickStateChanged = false;
-            this.paddleX = paddleX;
-            this.ballX = ballX;
-            this.gameLost = gameLost;
-            this.gameWon = gameWon;
-            this.lives = lives;
-            this.score = score;
-            this.shots = shots;
-        }
-
-        public boolean isBrickStateChanged() {
-            return brickStateChanged;
         }
 
         public int getI() {
             return i;
         }
 
-        public int getJ() {
-            return j;
-        }
-
         public boolean isBrickState() {
             return brickState;
         }
 
-        public int getPaddleX() {
-            return paddleX;
-        }
-
-        public int getBallX() {
-            return ballX;
-        }
-
-        public boolean isGameWon() {
-            return gameWon;
-        }
-
-        public boolean isGameLost() {
-            return gameLost;
-        }
-
-        public int getLives() {
-            return lives;
+        public int getJ() {
+            return j;
         }
     }
 
@@ -120,13 +69,16 @@ public class Simulation implements Observer {
 
     @Override
     public void update(Observable o, Object arg) {
-        ObservableArg observableArg = (ObservableArg) arg;
-
-        if ((observableArg.isBrickStateChanged())) {
+        if (arg != null) {
+            ObservableArg observableArg = (ObservableArg) arg;
             current.setBrickInput(observableArg.getI(), observableArg.getJ(), observableArg.isBrickState());
         }
 
-        current.setPaddlePosition(observableArg.getPaddleX());
-        current.setBallPosition(observableArg.getBallX());
+        current.setPaddlePosition(gameStats.getPaddle().getXLeft());
+        current.setBallPosition(gameStats.getBall().getX());
+    }
+
+    private void finishSimulationForCurrentNetwork() {
+
     }
 }

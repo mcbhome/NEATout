@@ -15,20 +15,15 @@ import java.util.*;
 
 public class Board extends JPanel
 {
-    private Paddle paddle;
     private ArrayList<Brick> bricks;
-    private Ball ball;
     private Timer timer;
     private boolean inGame = false;
     private boolean gamePaused = false;
     private boolean skippedMainMenu = false;
-    private boolean playerIsDead = false;
-    private int points = 0;
-    private int lives = 3;
-    private int level = 1;
+    //private boolean playerIsDead = false;
+    private GameStats gameStats;
     private Commons commons;
     private String bg = "res/landingScreen.jpg";
-    private boolean[][] brickArray = new boolean[11][7];
 
 
     /**
@@ -36,6 +31,7 @@ public class Board extends JPanel
      */
     public Board()
     {
+        gameStats = GameStats.getInstance();
         addKeyListener(new TAdapter());
         setFocusable(true);
         setBackground(Color.BLACK);
@@ -46,6 +42,9 @@ public class Board extends JPanel
 
     public void addNotify()
     {
+        if (gameStats == null)
+            gameStats = GameStats.getInstance();
+
         super.addNotify();
         gameInit();
     }
@@ -57,24 +56,15 @@ public class Board extends JPanel
      */
     public void gameInit()
     {
-        paddle = new Paddle(120,360);
-        ball = new Ball(150, 100, 5);
         commons = new Commons();
         bricks = new ArrayList<Brick>();
-        ball.reset();
-        for (int i = 0; i < brickArray.length; i++) {
-            for (int j = 0; j < brickArray[i].length; j++) {
-                brickArray[i][j] = false;
-            }
-        }
+        gameStats.gameInit();
         randomizeBricks();
     }
 
     public void initStats() {
-        lives = 3;
-        points = 0;
-        level = 1;
-        playerIsDead = false;
+        gameStats.newGame();
+        gamePaused = false;
         inGame = true;
     }
 
@@ -99,7 +89,7 @@ public class Board extends JPanel
         }
         else
         {
-            if (playerIsDead)
+            if (gameStats.isPlayerDead())
             {
                 drawGameState(g);
                 drawGameOver(g);
@@ -181,13 +171,16 @@ public class Board extends JPanel
 
         if (key == KeyEvent.VK_SPACE)
         {
-            initStats();
-            gameInit();
-
+            if (gameStats.isPlayerDead()) {
+                gameInit();
+                initStats();
+            }
             if (!skippedMainMenu)
             {
                 inGame = true;
                 skippedMainMenu = true;
+                gameInit();
+                initStats();
             }
             if (gamePaused)
             {
@@ -199,8 +192,10 @@ public class Board extends JPanel
         if (key == KeyEvent.VK_CONTROL) {
             if (!skippedMainMenu) {
                 System.out.println("NEAT, WIP");
+            } else {
+                initStats();
+                gameInit();
             }
-
         }
     }
 
@@ -231,7 +226,7 @@ public class Board extends JPanel
      */
     public void drawPoints(Graphics g)
     {
-        String score = Integer.toString(points);
+        String score = Integer.toString(gameStats.getScore());
         String totalPoints = "";
 
         int i = score.length();
@@ -262,7 +257,7 @@ public class Board extends JPanel
         Font font = new Font("OCR A Std", Font.PLAIN, 12);
         g.setColor(Color.WHITE);
         g.setFont(font);
-        g.drawString("LIVES "+lives,
+        g.drawString("LIVES "+gameStats.getLives(),
             7,
             (int)(commons.getHeight() * 0.98));
     }
@@ -271,7 +266,7 @@ public class Board extends JPanel
         Font font = new Font("OCR A Std", Font.PLAIN, 12);
         g.setColor(Color.WHITE);
         g.setFont(font);
-        g.drawString("LEVEL "+level, 7, (int)(commons.getHeight() * 0.93));
+        g.drawString("LEVEL "+ gameStats.getLevel(), 7, (int)(commons.getHeight() * 0.93));
     }
 
     /**
@@ -310,8 +305,8 @@ public class Board extends JPanel
         font = new Font("OCR A Std", Font.PLAIN, 11);
         g.setFont(font);
         g.drawString("Press <SPACE> to return to game",
-            (int)(commons.getWidth() * 0.1),
-            (int)(commons.getHeight() * 0.55));
+                (int) (commons.getWidth() * 0.1),
+                (int) (commons.getHeight() * 0.55));
     }
 
     /**
@@ -323,7 +318,7 @@ public class Board extends JPanel
     public void drawPaddle(Graphics2D g2)
     {
         g2.setColor(Color.WHITE);
-        Rectangle paddleRect = paddle.paddleAsRect();
+        Rectangle paddleRect = gameStats.getPaddle().paddleAsRect();
         g2.draw(paddleRect);
         g2.fill(paddleRect);
     }
@@ -341,17 +336,17 @@ public class Board extends JPanel
         brickRect = new ArrayList<Rectangle>();
         int i = 0;
         g2.setColor(Color.WHITE);
-        for (Brick a : bricks)
-        {
-            brickRect.add(bricks.get(i).brickAsRect());
+        synchronized (bricks) {
+            for (Brick a : bricks) {
+                brickRect.add(bricks.get(i).brickAsRect());
 
-            if (!bricks.get(i).isDestroyed())
-            {
-                g2.draw(brickRect.get(i));
-                g2.fill(brickRect.get(i));
+                if (!bricks.get(i).isDestroyed()) {
+                    g2.draw(brickRect.get(i));
+                    g2.fill(brickRect.get(i));
+                }
+
+                i++;
             }
-
-            i++;
         }
 
     }
@@ -363,7 +358,7 @@ public class Board extends JPanel
      */
     public void drawBall(Graphics2D g2)
     {
-        Ellipse2D.Double ballShape = ball.ballAsEllipse();
+        Ellipse2D.Double ballShape = gameStats.getBall().ballAsEllipse();
         g2.setColor(Color.WHITE);
         g2.fill(ballShape);
         g2.draw(ballShape);
@@ -408,19 +403,14 @@ public class Board extends JPanel
                 // Generate int between 0 or 1
                 randomInt = r.nextInt(2);
                 if (randomInt == 1) {
-                    bricks.add(new Brick(j,i, new int[]{k,l}));
-                    brickArray[k][l] = true;
+                    synchronized (bricks) {
+                        bricks.add(new Brick(j, i, new int[]{k, l}));
+                    }
+                    gameStats.setBrickState(k, l, true);
                 }
             }
         }
 
-        for (int i = 0; i < brickArray.length; i++) {
-            for (int j = 0; j < brickArray[i].length; j++) {
-                System.out.print(brickArray[i][j] + " ");
-            }
-            System.out.println();
-        }
-        System.out.println();
     }
 
     /**
@@ -430,10 +420,11 @@ public class Board extends JPanel
      */
     public void collisionCheck()
     {
-        if ((ball.ballAsEllipse()).intersects(paddle.paddleAsRect()))
+        if ((gameStats.getBall().ballAsEllipse()).intersects(gameStats.getPaddle().paddleAsRect()))
         {
-            ball.changeVerticalDirection();
+            gameStats.getBall().changeVerticalDirection();
             adjustBallSpeedRelativeToPaddleIntersection();
+            gameStats.incrementShots();
         }
         // If ball hits a brick, remove it
         brickCollisionDetection();
@@ -449,30 +440,27 @@ public class Board extends JPanel
         int i = 0;
         //ArrayList copy to avoid ConcurrentModificationError
         ArrayList<Brick> bricksCopy = new ArrayList<Brick>(bricks);
-        for (Brick a : bricks)
-        {
-            Brick current = bricks.get(i);
-            if ((ball.ballAsEllipse()).intersects(current.brickAsRect()))
-            {
+        synchronized (bricks) {
+            for (Brick a : bricks) {
+                Brick current = a;
+                if ((gameStats.getBall().ballAsEllipse()).intersects(current.brickAsRect())) {
 
-                ball.changeVerticalDirection();
-                current.destroyBrick();
-                int[] ids = current.getIds();
-                brickArray[ids[0]][ids[1]] = false;
-                //System.out.println("Brick "+i+" is destroyed!");
-                points+=100;
-                try
-                {
-                    bricksCopy.remove(i);
+                    gameStats.getBall().changeVerticalDirection();
+                    current.destroyBrick();
+                    int[] ids = current.getIds();
+                    gameStats.destroyBrick(ids[0], ids[1]);
+                    //System.out.println("Brick "+i+" is destroyed!");
+                    gameStats.brickHit();
+                    try {
+                        bricksCopy.remove(a);
+                    } catch (Exception IndexOutOfBoundsException) {
+                    }
                 }
-                catch (Exception IndexOutOfBoundsException)
-                {
-                }
+
+                //i++;
             }
-
-            i++;
+            bricks = bricksCopy;
         }
-        bricks = bricksCopy;
         checkForVictory();
     }
 
@@ -483,19 +471,21 @@ public class Board extends JPanel
      */
     public void checkIfPlayerIsDead()
     {
-        if (lives == 0)
+        if (gameStats.getLives() == 0)
         {
             inGame = false;
-            playerIsDead = true;
+            gameStats.setPlayerIsDead(true);
+            gameStats.setGameLost(true);
             return;
         }
-        if (ball.getY() + (2 * ball.getRadius()) == commons.getHeight())
+        if (gameStats.getBall().getY() + (2 * gameStats.getBall().getRadius()) == commons.getHeight())
         {
             inGame = !inGame;
-            gamePaused = !gamePaused;
-            lives -= 1;
-            ball.reset();
-            paddle = new Paddle(120,360);
+
+            if (gameStats.getLives() != 0)
+                gamePaused = !gamePaused;
+
+            gameStats.playerDied();
         }
     }
 
@@ -505,10 +495,12 @@ public class Board extends JPanel
      */
     public void checkForVictory()
     {
-        if (bricks.size() == 0)
-        {
-            level += 1;
-            gameInit();
+        synchronized (bricks) {
+            if (bricks.size() == 0) {
+                gameStats.incrementLevel();
+                gameStats.setGameWon(true);
+                gameInit();
+            }
         }
     }
 
@@ -521,30 +513,30 @@ public class Board extends JPanel
      */
     public void adjustBallSpeedRelativeToPaddleIntersection()
     {
-        Ellipse2D.Double ballShape = ball.ballAsEllipse();
-        Rectangle paddleRect = paddle.paddleAsRect();
+        Ellipse2D.Double ballShape = gameStats.getBall().ballAsEllipse();
+        Rectangle paddleRect = gameStats.getPaddle().paddleAsRect();
         // Split paddle in four parts thus allowing player to control
         // direction of the ball
 
         // Get leftmost position of paddle and ball
-        float pLeft = paddle.getXLeft();
-        float bLeft = ball.getX();
+        float pLeft = gameStats.getPaddle().getXLeft();
+        float bLeft = gameStats.getBall().getX();
 
         if (bLeft > pLeft + (0.75*commons.getPWidth()))
         {
-            ball.setHorizontalSpeed(2);
+            gameStats.getBall().setHorizontalSpeed(2);
         }
         else if (bLeft > pLeft + (0.5*commons.getPWidth()))
         {
-            ball.setHorizontalSpeed(1);
+            gameStats.getBall().setHorizontalSpeed(1);
         }
         else if (bLeft > pLeft + (0.25*commons.getPWidth()))
         {
-            ball.setHorizontalSpeed(-1);
+            gameStats.getBall().setHorizontalSpeed(-1);
         }
         else
         {
-            ball.setHorizontalSpeed(-2);
+            gameStats.getBall().setHorizontalSpeed(-2);
         }
 
     }
@@ -556,12 +548,12 @@ public class Board extends JPanel
     {
         public void keyReleased(KeyEvent e)
         {
-            paddle.keyReleased(e);
+            gameStats.getPaddle().keyReleased(e);
         }
 
         public void keyPressed(KeyEvent e)
         {
-            paddle.keyPressed(e);
+            gameStats.getPaddle().keyPressed(e);
             keyToStart(e);
             pauseGame(e);
         }
@@ -573,8 +565,8 @@ public class Board extends JPanel
         {
             if (inGame)
             {
-                paddle.move();
-                ball.move();
+                gameStats.getPaddle().move();
+                gameStats.getBall().move();
                 collisionCheck();
             }
 
