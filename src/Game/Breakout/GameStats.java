@@ -1,6 +1,5 @@
-package Game;
+package Game.Breakout;
 
-import java.util.ArrayList;
 import java.util.Observable;
 
 /**
@@ -12,6 +11,7 @@ public class GameStats extends Observable {
     private static final int START_LIVES = 3;
     private static final int POINTS_PER_BRICK = 100;
 
+    boolean gameStarted;
     boolean[][] bricks;
     Paddle paddle;
     Ball ball;
@@ -27,6 +27,7 @@ public class GameStats extends Observable {
 
     private GameStats() {
         bricks = new boolean[11][7];
+        gameStarted = false;
     }
 
     public static GameStats getInstance() {
@@ -49,6 +50,7 @@ public class GameStats extends Observable {
         this.score = 0;
         this.shots = 0;
         this.level = 1;
+        properlyNotify();
     }
 
     public void gameInit() {
@@ -60,6 +62,8 @@ public class GameStats extends Observable {
                 bricks[i][j] = false;
             }
         }
+        gameStarted = true;
+        properlyNotify();
     }
 
     public void playerDied() {
@@ -70,19 +74,22 @@ public class GameStats extends Observable {
 
     public void brickHit() {
         this.score += POINTS_PER_BRICK;
+        properlyNotify();
     }
 
     public void destroyBrick(int i, int j) {
         bricks[i][j] = false;
-        notifyObservers();
+        properlyNotify();
     }
 
     public void incrementShots() {
         this.shots++;
+        properlyNotify();
     }
 
     public void decrementLives() {
         this.lives--;
+        properlyNotify();
     }
 
     public void setScore(int score) {
@@ -131,14 +138,17 @@ public class GameStats extends Observable {
 
     public void setPlayerIsDead(boolean dead) {
         this. playerIsDead = true;
+        properlyNotify();
     }
 
     public void setGameWon(boolean gameWon) {
         this.gameWon = gameWon;
+        properlyNotify();
     }
 
     public void setGameLost(boolean gameLost) {
         this.gameLost = gameLost;
+        properlyNotify();
     }
 
     public void setLives(int lives) {
@@ -155,10 +165,17 @@ public class GameStats extends Observable {
 
     public void setBrickState(int i, int j, boolean state) {
         bricks[i][j] = state;
+        properlyNotify();
     }
 
     public void incrementLevel() {
         this.level++;
+        properlyNotify();
+    }
+
+    public void properlyNotify() {
+        setChanged();
+        notifyObservers();
     }
 
     public boolean isGameWon() {
@@ -167,6 +184,10 @@ public class GameStats extends Observable {
 
     public boolean isGameLost() {
         return gameLost;
+    }
+
+    public boolean isGameStarted() {
+        return gameStarted;
     }
 
     public boolean isPlayerDead() {

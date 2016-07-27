@@ -1,4 +1,4 @@
-package neat;
+package Game.neat;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -7,16 +7,24 @@ import java.util.LinkedList;
  * Created by qfi_2 on 25.07.2016.
  */
 public class NeuralNetwork {
-    Neuron[][] brickInputNeurons;
-    Neuron paddleInputNeuron;
-    Neuron ballInputNeuron;
-    Neuron rightOutputNeuron;
-    Neuron leftOutputNeuron;
-    Genome genome;
+    private Neuron[][] brickInputNeurons;
+    private Neuron paddleInputNeuron;
+    private Neuron ballInputNeuron;
+    private Neuron rightOutputNeuron;
+    private Neuron leftOutputNeuron;
+    private Genome genome;
 
     public NeuralNetwork(Genome g) {
         this.genome = g;
+
+        this.brickInputNeurons = g.getBrickInputNeurons();
+        this.paddleInputNeuron = g.getPaddleInputNeuron();
+        this.ballInputNeuron = g.getBallInputNeuron();
+        this.rightOutputNeuron = g.getRightOutputNeuron();
+        this.leftOutputNeuron = g.getLeftOutputNeuron();
+
         initInputDepths();
+        calculateDepths();
     }
 
     private void initInputDepths() {
@@ -110,6 +118,12 @@ public class NeuralNetwork {
         } else if (leftOutputNeuron.getDepth() == 0 && rightOutputNeuron.getDepth() == 0) {
             leftOutputNeuron.setDepth(Integer.MAX_VALUE);
             rightOutputNeuron.setDepth(Integer.MAX_VALUE);
+        }
+    }
+
+    public void reset() {
+        for (Neuron n : genome.getNodeGenes()) {
+            n.reset();
         }
     }
 

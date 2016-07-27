@@ -1,4 +1,4 @@
-package Game;
+package Game.Breakout;
 
 import javax.swing.*;
 import javax.swing.border.*;

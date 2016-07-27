@@ -1,4 +1,4 @@
-package neat;
+package Game.neat;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,12 +8,12 @@ import java.util.Comparator;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Species {
-    private double sharedFitness;
     private ArrayList<Genome> genomes;
     private Genome representative;
     private double totalSharedFitness;
 
     public Species(Genome representative) {
+        genomes = new ArrayList<Genome>();
         this.representative = representative;
         genomes.add(representative);
     }

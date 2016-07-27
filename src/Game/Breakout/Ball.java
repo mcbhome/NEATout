@@ -1,4 +1,4 @@
-package Game; /**
+package Game.Breakout; /**
 The Ball class includes variables which identify
 and describe the state of the ball, such as coordinates
 radius, vertical and horizontal speed, orientation etc.

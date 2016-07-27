@@ -1,7 +1,6 @@
-package neat;
+package Game.neat;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -14,7 +13,7 @@ public class Population implements Serializable {
     private static int gen_count = 0;
     private static int conn_count = 0;
 
-    private static final int POPULATION_SIZE = 90;
+    private static final int POPULATION_SIZE = 3;
     private static final int POPULATION_DENOMINATOR = 3;
 
     private static final int MAXIMUM_STALENESS = 20;
@@ -61,6 +60,7 @@ public class Population implements Serializable {
             Genome g = new Genome();
             g.addAllNodes(inputNeurons);
             g.addAllNodes(outputNeurons);
+            genomes.add(g);
         }
     }
 
@@ -292,11 +292,9 @@ public class Population implements Serializable {
                     if (first.getInnov() == second.getInnov()) {
                         Connection c;
                         if (rnd < 0.5) {
-                            c = new Connection(first);
-                            child.addConnectionGene(c);
+                            c = child.addConnectionGene(first);
                         } else {
-                            c = new Connection(second);
-                            child.addConnectionGene(c);
+                            c = child.addConnectionGene(second);
                         }
 
                         if (!first.isEnabled() && !second.isEnabled() && Math.random() < REACTIVATE_CONNECTION_CHANCE) {
@@ -308,12 +306,12 @@ public class Population implements Serializable {
                     } else {
                         if (firstInnov < secondInnov) {
                             if (rnd < 0.5) {
-                                child.addConnectionGene(new Connection(first));
+                                child.addConnectionGene(first);
                             }
                             indexA++;
                         } else {
                             if (rnd < 0.5) {
-                                child.addConnectionGene(new Connection(second));
+                                child.addConnectionGene(second);
                             }
                             indexB++;
                         }
@@ -339,15 +337,15 @@ public class Population implements Serializable {
 
                     if (fitterConnection.getInnov() == lesserConnection.getInnov()) {
                         if (Math.random() < 0.5) {
-                            child.addConnectionGene(new Connection(fitterConnection));
+                            child.addConnectionGene(fitterConnection);
                         } else {
-                            child.addConnectionGene(new Connection(lesserConnection));
+                            child.addConnectionGene(lesserConnection);
                         }
                         indexFitter++;
                         indexLesser++;
 
                     } else if (lessFit.isDisjoint(fitterConnection) || lessFit.isExcess(fitterConnection)) {
-                        child.addConnectionGene(new Connection(fitterConnection));
+                        child.addConnectionGene(fitterConnection);
                         indexFitter++;
                     } else if (fitter.isDisjoint(lesserConnection) || fitter.isExcess(lesserConnection)) {
                         indexLesser++;
@@ -392,8 +390,8 @@ public class Population implements Serializable {
 
         c.setEnabled(false);
 
-        in.addSuccessor(new Connection(in, n, getNextInnov(), 1));
-        n.addSuccessor(new Connection(n, out, getNextInnov(), c.getWeight()));
+        in.addSuccessor(new Connection(in, n, getNextInnov(), 1, g));
+        n.addSuccessor(new Connection(n, out, getNextInnov(), c.getWeight(), g));
     }
 
     private void edgeMutation(Genome g) {
@@ -411,7 +409,8 @@ public class Population implements Serializable {
         while (!validDestNodes.isEmpty() && addedConnection) {
             out = validDestNodes.get((int) (Math.random() * validDestNodes.size()));
             if (!in.hasSuccessor(out)) {
-                in.addSuccessor(new Connection(in, out, getNextInnov(), Math.random() * MUTATION_WEIGHT_BOUND - MUTATION_WEIGHT_BOUND));
+                double connectionWeight = Math.random() * MUTATION_WEIGHT_BOUND - MUTATION_WEIGHT_BOUND;
+                in.addSuccessor(new Connection(in, out, getNextInnov(), connectionWeight, g));
                 addedConnection = true;
             }
 
@@ -427,6 +426,14 @@ public class Population implements Serializable {
 
     public int getGenerationId() {
         return gen_id;
+    }
+
+    public ArrayList<Genome> getGenomes() {
+        return this.genomes;
+    }
+
+    public double getTopFitness() {
+        return top_fitness;
     }
 
     // TODO: Check if exists

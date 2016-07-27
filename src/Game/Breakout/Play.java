@@ -1,9 +1,11 @@
-package Game; /**
+package Game.Breakout; /**
 The Play class acts an entry point
 for the game. It initializes the contents
 and dimensions of the frame, sets its position
 relative to the screen and adds the Board component.
  */
+import Game.UserInterface.NEATDiagnostics;
+
 import javax.swing.JFrame;
 import java.awt.*;
 
@@ -28,5 +30,6 @@ public class Play extends JFrame
     public static void main (String[] args)
     {
         new Play();
+        new NEATDiagnostics();
     }
 }

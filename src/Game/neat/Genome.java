@@ -1,4 +1,4 @@
-package neat;
+package Game.neat;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,6 +9,9 @@ import java.util.Comparator;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Genome {
+    private static int numGenomes = 0;
+
+    private int id;
     private ArrayList<Neuron> nodeGenes;
     private BrickInputNeuron[][] brickInputs;
     private Neuron paddleInput;
@@ -21,6 +24,8 @@ public class Genome {
     private int highestInnov;
 
     public Genome() {
+        id = ++numGenomes;
+
         nodeGenes = new ArrayList<Neuron>();
         connectionGenes = new ArrayList<Connection>();
         brickInputs = new BrickInputNeuron[11][7];
@@ -41,7 +46,7 @@ public class Genome {
         this.connectionGenes = new ArrayList<Connection>();
 
         for (Connection c : parent.connectionGenes) {
-            this.connectionGenes.add(new Connection(c));
+            this.connectionGenes.add(new Connection(c, this));
         }
 
         this.highestInnov = parent.highestInnov;
@@ -74,27 +79,22 @@ public class Genome {
         return 0;
     }
 
-    public void addConnectionGene(Connection c) {
-        connectionGenes.add(new Connection(c));
-        addNodeFromConnectionGeneIfDoesntExist(c);
+    public Connection addConnectionGene(Connection c) {
+        Connection result = new Connection(c, this);
+        connectionGenes.add(result);
+        result.getIn().addSuccessor(result);
         refreshConnectionStats(c.getInnov());
+        return result;
     }
 
-    private void addNodeFromConnectionGeneIfDoesntExist(Connection c) {
-            Neuron in = c.getIn();
-            Neuron out = c.getOut();
 
-            if (!nodeGenes.contains(in)) {
-                this.addNode(new Neuron(in));
-            }
-            if (!nodeGenes.contains(out)) {
-                this.addNode(new Neuron(out));
-            }
-    }
-
-    public void addConnection(Neuron in, Neuron out, int innov, double weight) {
-        connectionGenes.add(new Connection(in, out, innov, weight));
+    public Connection addConnection(Neuron in, Neuron out, int innov, double weight) {
+        Connection result = new Connection(in, out, innov, weight, this);
+        connectionGenes.add(new Connection(in, out, innov, weight, this));
+        result.getIn().addSuccessor(result);
         refreshConnectionStats(innov);
+
+        return result;
     }
 
     public void refreshConnectionStats(int innov) {
@@ -192,27 +192,45 @@ public class Genome {
 
     public void addAllNodes(Collection<? extends Neuron> neurons) {
         for (Neuron n : neurons) {
-            this.nodeGenes.add(new Neuron(n));
+            if (n.getType() == Neuron.Neuron_Type.SENSOR_BRICK) {
+                this.addNode(new BrickInputNeuron((BrickInputNeuron) n));
+            } else {
+                this.addNode(new Neuron(n));
+            }
         }
+    }
+
+    public Neuron getNodeById(int id) {
+        for (Neuron n : nodeGenes) {
+            if (n.getId() == id) {
+                return n;
+            }
+        }
+
+        return null;
+    }
+
+    public int getId() {
+        return id;
     }
 
     public BrickInputNeuron[][] getBrickInputNeurons() {
         return brickInputs;
     }
 
-    public Neuron getPaddleInputNeurons() {
+    public Neuron getPaddleInputNeuron() {
         return paddleInput;
     }
 
-    public Neuron getBallInputNeurons() {
+    public Neuron getBallInputNeuron() {
         return ballInput;
     }
 
-    public Neuron getLeftOutputNeurons() {
+    public Neuron getLeftOutputNeuron() {
         return leftOutput;
     }
 
-    public Neuron getRightOutputNeurons() {
+    public Neuron getRightOutputNeuron() {
         return rightOutput;
     }
 }

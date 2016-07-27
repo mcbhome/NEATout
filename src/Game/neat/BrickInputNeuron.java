@@ -1,4 +1,4 @@
-package neat;
+package Game.neat;
 
 /**
  * Created by qfi_2 on 27.07.2016.

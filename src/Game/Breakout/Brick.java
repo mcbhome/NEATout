@@ -1,4 +1,4 @@
-package Game; /**
+package Game.Breakout; /**
 The Brick class includes variables which determine
 the coordinates of each brick and whether it is
 destroyed or not. Bricks are not implemented as

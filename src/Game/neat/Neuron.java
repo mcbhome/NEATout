@@ -1,7 +1,6 @@
-package neat;
+package Game.neat;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * Created by qfi_2 on 25.07.2016.
@@ -29,10 +28,6 @@ class Neuron {
         this.id = n.getId();
         this.type = n.getType();
         this.successors = new ArrayList<Connection>();
-
-        for (Connection c : n.successors) {
-            this.successors.add(new Connection(c));
-        }
     }
 
     public void setInput(double in) {
@@ -100,10 +95,23 @@ class Neuron {
     }
 
     public void addSuccessor(Connection c) {
+        for (Connection s : successors) {
+            if (s.getInnov() == c.getInnov())
+                return;
+        }
+
         successors.add(c);
     }
 
     public ArrayList<Connection> getSuccessors() {
         return this.successors;
+    }
+
+    public void reset() {
+        if (!this.isInputNeuron()) {
+            this.input = 0;
+        }
+
+        this.output = 0;
     }
 }

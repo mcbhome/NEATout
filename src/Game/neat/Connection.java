@@ -1,4 +1,4 @@
-package neat;
+package Game.neat;
 
 import java.io.Serializable;
 
@@ -12,7 +12,20 @@ public class Connection implements Serializable {
     private boolean enabled;
     private int innov;
 
-    public Connection(Neuron in, Neuron out, int innov, double weight) {
+    public Connection(Neuron in, Neuron out, int innov, double weight, Genome g) {
+        Neuron genomeIn = g.getNodeById(in.getId());
+        Neuron genomeOut = g.getNodeById(out.getId());
+
+        if (genomeIn  == null) {
+            genomeIn = new Neuron(in);
+            g.addNode(genomeIn);
+        }
+
+        if (genomeOut == null) {
+            genomeOut = new Neuron(out);
+            g.addNode(genomeOut);
+        }
+
         this.in = in;
         this.out = out;
         this.innov = innov;
@@ -20,12 +33,8 @@ public class Connection implements Serializable {
         enabled = true;
     }
 
-    public Connection(Connection c) {
-        this.in = c.in;
-        this.out = c.out;
-        this.weight = c.weight;
-        this.enabled = c.enabled;
-        this.innov = c.innov;
+    public Connection(Connection c, Genome g) {
+        this(c.getIn(), c.getOut(), c.getInnov(), c.getWeight(), g);
     }
 
     public Neuron getIn() {

@@ -1,4 +1,4 @@
-package Game; /**
+package Game.Breakout; /**
 The Board class includes the game logic as well
 as game objects, such as the brick, paddle and ball,
 and all the methods to draw components to screen
@@ -23,6 +23,7 @@ public class Board extends JPanel
     //private boolean playerIsDead = false;
     private GameStats gameStats;
     private Commons commons;
+    private boolean simulationMode;
     private String bg = "res/landingScreen.jpg";
 
 
@@ -38,6 +39,7 @@ public class Board extends JPanel
         setDoubleBuffered(true);
         timer = new Timer();
         timer.scheduleAtFixedRate(new ScheduleTask(), 100, 8);
+
     }
 
     public void addNotify()
