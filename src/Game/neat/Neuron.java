@@ -51,7 +51,7 @@ class Neuron {
     }
 
     public double calculateSigmoid(double x) {
-        return 1.0 / (1 - Math.exp(-1 * SIGMOID_STEEPNESS * x));
+        return (1.0 / (1 + Math.exp(-1 * SIGMOID_STEEPNESS * x))) - 0.5;
     }
 
     public double getOutput() {
@@ -113,5 +113,9 @@ class Neuron {
         }
 
         this.output = 0;
+    }
+
+    public String toString() {
+        return "ID: " + this.getId() + ", Input: " + this.input + ", Output: " + this.output;
     }
 }

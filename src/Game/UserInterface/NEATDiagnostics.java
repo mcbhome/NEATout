@@ -4,6 +4,7 @@ import Game.Breakout.GameStats;
 import Game.neat.Genome;
 import Game.neat.Population;
 import Game.neat.Simulation;
+import Game.neat.Species;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -18,6 +19,7 @@ import java.util.Vector;
  * Created by qfi_2 on 27.07.2016.
  */
 public class NEATDiagnostics extends JFrame implements Observer {
+
     private static final String TO_BE_DETERMINED = "TBD";
     private JTabbedPane NetworkPopulationTabbedPane;
     private JPanel PopulationPane;
@@ -39,7 +41,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private Simulation simulation;
     private Population population;
     private GameStats gameStats;
-    private String[] networkTableColumnNames = {"ID", "# Nodes", "#Connections", "Fitness", "SharedFitness"};
+    private String[] networkTableColumnNames = {"ID", "SpeciesID", "# Nodes", "#Connections (#Active)", "Fitness", "SharedFitness"};
 
     public NEATDiagnostics() {
         super("NEAT Diagnostics");
@@ -47,7 +49,6 @@ public class NEATDiagnostics extends JFrame implements Observer {
         simulation = new Simulation(GameStats.getInstance());
         population = simulation.getPopulation();
         gameStats = gameStats.getInstance();
-        gameStats.addObserver(this);
 
         JMenuBar menubar = new JMenuBar();
         JMenu file = new JMenu("File");
@@ -94,8 +95,12 @@ public class NEATDiagnostics extends JFrame implements Observer {
 
         updateLabels();
 
+        gameStats.addObserver(this);
+        simulation.addObserver(this);
+
         setVisible(true);
     }
+
 
     private void createUIComponents() {
         // TODO: place custom component creation code here
@@ -108,23 +113,36 @@ public class NEATDiagnostics extends JFrame implements Observer {
 
     @Override
     public void update(Observable o, Object arg) {
+        if (arg != null && o instanceof Simulation) {
+            Simulation.Update_Args argtype = (Simulation.Update_Args) arg;
+
+            if (argtype == Simulation.Update_Args.NEW_GENERATION) {
+                fillTable();
+            }
+        }
+
         updateLabels();
     }
 
     public void updateLabels() {
-        if (gameStats.isGameStarted()) {
+        if (population != null) {
             generationLabel.setText("" + population.getGenerationId());
             maxFitnessLabel.setText("" + population.getTopFitness());
             networkCountLabel.setText("" + population.getGenomes().size());
             currentNetLabelId.setText("" + simulation.getCurrent().getGenome().getId());
+        } else {
+            generationLabel.setText(TO_BE_DETERMINED);
+            maxFitnessLabel.setText(TO_BE_DETERMINED);
+            networkCountLabel.setText(TO_BE_DETERMINED);
+            currentNetLabelId.setText(TO_BE_DETERMINED);
+        }
+
+        if (gameStats.isGameStarted()) {
             scoreLabel.setText("" + gameStats.getScore());
             livesLabel.setText("" + gameStats.getLives());
             levelLabel.setText("" + gameStats.getLevel());
             shotsLabel.setText("" + gameStats.getShots());
         } else {
-            generationLabel.setText(TO_BE_DETERMINED);
-            maxFitnessLabel.setText(TO_BE_DETERMINED);
-            networkCountLabel.setText(TO_BE_DETERMINED);
             scoreLabel.setText(TO_BE_DETERMINED);
             livesLabel.setText(TO_BE_DETERMINED);
             levelLabel.setText(TO_BE_DETERMINED);
@@ -133,9 +151,14 @@ public class NEATDiagnostics extends JFrame implements Observer {
     }
 
     public void fillTable() {
-        int i = 0;
-        for (Genome g : population.getGenomes()) {
-            tableModel.addRow(new String[]{"" + g.getId(), "" + g.getNodeGenes().size(), "" + g.getConnectionGenes().size(), "" + g.getFitness(), "" + g.getSharedFitness()});
+        for (int i = tableModel.getRowCount(); i > 0; i--) {
+            tableModel.removeRow(0);
+        }
+
+        for (Species s : population.getSpecies()) {
+            for (Genome g : s.getGenomes()) {
+                tableModel.addRow(new String[]{"" + g.getId(), "" + s.getId(), "" + g.getNodeGenes().size(), "" + g.getConnectionGenes().size() + " (" + g.getActiveConnectionCount() + ")", "" + g.getFitness(), "" + g.getSharedFitness()});
+            }
         }
     }
 

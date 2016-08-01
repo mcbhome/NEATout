@@ -1,9 +1,7 @@
 package Game.neat;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
+import java.lang.reflect.Array;
+import java.util.*;
 
 /**
  * Created by qfi_2 on 25.07.2016.
@@ -32,24 +30,56 @@ public class Genome {
         highestInnov = 0;
         fitness = 0;
         sharedFitness = 0;
+
     }
 
     public Genome(Genome parent) {
-        brickInputs = new BrickInputNeuron[11][7];
-
-        this.nodeGenes = new ArrayList<Neuron>();
+        this();
 
         for (Neuron n : parent.getNodeGenes()) {
-            this.addNode(new Neuron(n));
+            this.addFromExistingNode(n);
         }
 
-        this.connectionGenes = new ArrayList<Connection>();
-
         for (Connection c : parent.connectionGenes) {
-            this.connectionGenes.add(new Connection(c, this));
+            this.addFromExistingConnection(c);
         }
 
         this.highestInnov = parent.highestInnov;
+
+        this.calculateDepths();
+    }
+
+    public Genome(ArrayList<Neuron> inputOutputNeurons) {
+        this();
+
+        for (Neuron n : inputOutputNeurons) {
+            this.addFromExistingNode(n);
+        }
+
+        this.calculateDepths();
+    }
+
+    public Neuron addFromExistingNode(Neuron n) {
+        Neuron newNode;
+
+        if (n.getType() == Neuron.Neuron_Type.SENSOR_BRICK) {
+            newNode = new BrickInputNeuron((BrickInputNeuron) n);
+        } else {
+            newNode = new Neuron(n);
+        }
+
+        this.addNode(newNode);
+
+        return newNode;
+    }
+
+    public Connection addFromExistingConnection(Connection c) {
+        Connection res = new Connection(c, this);
+        res.getIn().addSuccessor(res);
+        connectionGenes.add(res);
+        refreshConnectionStats(c.getInnov());
+
+        return res;
     }
 
 
@@ -77,14 +107,6 @@ public class Genome {
         }
 
         return 0;
-    }
-
-    public Connection addConnectionGene(Connection c) {
-        Connection result = new Connection(c, this);
-        connectionGenes.add(result);
-        result.getIn().addSuccessor(result);
-        refreshConnectionStats(c.getInnov());
-        return result;
     }
 
 
@@ -118,7 +140,7 @@ public class Genome {
 
     // TODO: Node genes aswell?
     public int getGenomeCount() {
-        return connectionGenes.size();
+        return connectionGenes.size() + nodeGenes.size();
     }
 
     public boolean isExcess(Connection c) {
@@ -232,5 +254,83 @@ public class Genome {
 
     public Neuron getRightOutputNeuron() {
         return rightOutput;
+    }
+
+    public ArrayList<Neuron> getMandatoryNodes() {
+        ArrayList<Neuron> res = new ArrayList<Neuron>();
+
+        for (int i = 0; i < brickInputs.length; i++) {
+            for (int j = 0; j < brickInputs[i].length; j++) {
+                res.add(brickInputs[i][j]);
+            }
+        }
+
+        res.add(paddleInput);
+        res.add(ballInput);
+        res.add(leftOutput);
+        res.add(rightOutput);
+
+        return res;
+    }
+
+    public String toString() {
+        return "ID: " + this.getId();
+    }
+
+    public int getActiveConnectionCount() {
+        int res = 0;
+
+        for (Connection c : connectionGenes) {
+            if (c.isEnabled()) {
+                res++;
+            }
+        }
+
+        return res;
+    }
+
+    public void calculateDepths() {
+        LinkedList<Neuron> curQueue = new LinkedList<Neuron>();
+        LinkedList<Neuron> nextQueue = new LinkedList<Neuron>();
+
+        for (int i = 0; i < brickInputs.length; i++) {
+            for (int j = 0; j < brickInputs[i].length; j++)
+                curQueue.add(brickInputs[i][j]);
+        }
+
+        curQueue.add(paddleInput);
+        curQueue.add(ballInput);
+
+        int curDepth = 1;
+
+        while (!curQueue.isEmpty()) {
+            while (!curQueue.isEmpty()) {
+                ArrayList<Connection> successors = curQueue.poll().getSuccessors();
+
+                for (Connection c : successors) {
+                    Neuron cur = c.getOut();
+                    if (cur.getDepth() < curDepth) {
+                        nextQueue.add(cur);
+                        cur.setDepth(curDepth);
+                    }
+                }
+            }
+            curDepth++;
+            curQueue = nextQueue;
+            nextQueue = new LinkedList<Neuron>();
+        }
+
+        if (rightOutput.getDepth() > leftOutput.getDepth()) {
+            leftOutput.setDepth(rightOutput.getDepth());
+        } else if (leftOutput.getDepth() > rightOutput.getDepth()) {
+            rightOutput.setDepth(leftOutput.getDepth());
+        } else if (leftOutput.getDepth() == 0 && rightOutput.getDepth() == 0) {
+            leftOutput.setDepth(Integer.MAX_VALUE);
+            rightOutput.setDepth(Integer.MAX_VALUE);
+        }
+    }
+
+    public int getGenomeCountWithoutBrickNeurons() {
+        return nodeGenes.size() - brickInputs.length * brickInputs[0].length + connectionGenes.size();
     }
 }

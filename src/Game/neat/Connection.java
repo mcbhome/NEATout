@@ -17,17 +17,15 @@ public class Connection implements Serializable {
         Neuron genomeOut = g.getNodeById(out.getId());
 
         if (genomeIn  == null) {
-            genomeIn = new Neuron(in);
-            g.addNode(genomeIn);
+            genomeIn = g.addFromExistingNode(in);
         }
 
         if (genomeOut == null) {
-            genomeOut = new Neuron(out);
-            g.addNode(genomeOut);
+            genomeOut = g.addFromExistingNode(out);
         }
 
-        this.in = in;
-        this.out = out;
+        this.in = genomeIn;
+        this.out = genomeOut;
         this.innov = innov;
         this.weight = weight;
         enabled = true;
@@ -67,5 +65,9 @@ public class Connection implements Serializable {
 
     public boolean sameStructure(Connection c) {
         return this.in.equals(c.in) && this.out.equals(c.out);
+    }
+
+    public String toString() {
+        return ("From " + in.getId() + " to " + out.getId() + ": " + this.getWeight());
     }
 }

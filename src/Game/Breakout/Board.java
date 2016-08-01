@@ -4,6 +4,8 @@ as game objects, such as the brick, paddle and ball,
 and all the methods to draw components to screen
 */
 
+import Game.UserInterface.NEATDiagnostics;
+
 import javax.swing.JPanel;
 import javax.swing.*;
 import java.awt.*;
@@ -20,7 +22,6 @@ public class Board extends JPanel
     private boolean inGame = false;
     private boolean gamePaused = false;
     private boolean skippedMainMenu = false;
-    //private boolean playerIsDead = false;
     private GameStats gameStats;
     private Commons commons;
     private boolean simulationMode;
@@ -33,38 +34,34 @@ public class Board extends JPanel
     public Board()
     {
         gameStats = GameStats.getInstance();
+        gameInit();
         addKeyListener(new TAdapter());
         setFocusable(true);
         setBackground(Color.BLACK);
         setDoubleBuffered(true);
         timer = new Timer();
         timer.scheduleAtFixedRate(new ScheduleTask(), 100, 8);
-
     }
 
-    public void addNotify()
-    {
-        if (gameStats == null)
-            gameStats = GameStats.getInstance();
-
-        super.addNotify();
-        gameInit();
-    }
     /**
      * Initializes game logic and variables
      * Bricks are initialized for the first
      * level and randomly initialized for every other
-     * level
+     * level, executed FIRST
      */
     public void gameInit()
     {
         commons = new Commons();
         bricks = new ArrayList<Brick>();
         gameStats.gameInit();
-        randomizeBricks();
     }
 
+    /**
+     * executed AFTER gameInit
+     */
     public void initStats() {
+        gameStats.clearBricks();
+        randomizeBricks();
         gameStats.newGame();
         gamePaused = false;
         inGame = true;
@@ -94,7 +91,9 @@ public class Board extends JPanel
             if (gameStats.isPlayerDead())
             {
                 drawGameState(g);
-                drawGameOver(g);
+                if (!simulationMode) {
+                    drawGameOver(g);
+                }
             }
             else if (gamePaused)
             {
@@ -174,15 +173,13 @@ public class Board extends JPanel
         if (key == KeyEvent.VK_SPACE)
         {
             if (gameStats.isPlayerDead()) {
-                gameInit();
-                initStats();
+                startNewGame();
             }
             if (!skippedMainMenu)
             {
                 inGame = true;
                 skippedMainMenu = true;
-                gameInit();
-                initStats();
+                startNewGame();
             }
             if (gamePaused)
             {
@@ -194,9 +191,10 @@ public class Board extends JPanel
         if (key == KeyEvent.VK_CONTROL) {
             if (!skippedMainMenu) {
                 System.out.println("NEAT, WIP");
-            } else {
-                initStats();
-                gameInit();
+                simulationMode = true;
+                startNewGame();
+
+                new NEATDiagnostics();
             }
         }
     }
@@ -213,7 +211,7 @@ public class Board extends JPanel
 
         if (key == KeyEvent.VK_ESCAPE)
         {
-            if (skippedMainMenu)
+            if (skippedMainMenu && !simulationMode)
             {
                 inGame = !inGame;
                 gamePaused = !gamePaused;
@@ -450,9 +448,8 @@ public class Board extends JPanel
                     gameStats.getBall().changeVerticalDirection();
                     current.destroyBrick();
                     int[] ids = current.getIds();
-                    gameStats.destroyBrick(ids[0], ids[1]);
+                    gameStats.brickHit(ids[0], ids[1]);
                     //System.out.println("Brick "+i+" is destroyed!");
-                    gameStats.brickHit();
                     try {
                         bricksCopy.remove(a);
                     } catch (Exception IndexOutOfBoundsException) {
@@ -475,20 +472,38 @@ public class Board extends JPanel
     {
         if (gameStats.getLives() == 0)
         {
-            inGame = false;
-            gameStats.setPlayerIsDead(true);
+            if (!simulationMode) {
+                inGame = false;
+            }
+            gameStats.setPlayerIsDead();
             gameStats.setGameLost(true);
+            if (simulationMode) {
+                startNewGame();
+            }
             return;
         }
         if (gameStats.getBall().getY() + (2 * gameStats.getBall().getRadius()) == commons.getHeight())
         {
-            inGame = !inGame;
+            if (!simulationMode)
+                inGame = !inGame;
 
-            if (gameStats.getLives() != 0)
+            if (gameStats.getLives() != 0 && !simulationMode)
                 gamePaused = !gamePaused;
 
             gameStats.playerDied();
+
+            if (gameStats.getLives() == 0) {
+                gameStats.setPlayerIsDead();
+                if (simulationMode) {
+                    startNewGame();
+                }
+            }
         }
+    }
+
+    public void startNewGame() {
+        gameInit();
+        initStats();
     }
 
     /**
@@ -569,6 +584,7 @@ public class Board extends JPanel
             {
                 gameStats.getPaddle().move();
                 gameStats.getBall().move();
+                gameStats.movementOccured();
                 collisionCheck();
             }
 

@@ -8,6 +8,8 @@ import java.util.Comparator;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Species {
+    private static int species_count = 0;
+    private int id;
     private ArrayList<Genome> genomes;
     private Genome representative;
     private double totalSharedFitness;
@@ -16,6 +18,7 @@ public class Species {
         genomes = new ArrayList<Genome>();
         this.representative = representative;
         genomes.add(representative);
+        this.id = ++species_count;
     }
 
     public void calculateSharedFitness() {
@@ -69,7 +72,9 @@ public class Species {
     }
 
     public void addGenome(Genome g) {
-        genomes.add(g);
+        if (!genomes.contains(g)) {
+            genomes.add(g);
+        }
     }
 
     public void setRepresentativeAndResetGenomes(Genome g) {
@@ -79,5 +84,9 @@ public class Species {
 
     public ArrayList<Genome> getGenomes() {
         return genomes;
+    }
+
+    public int getId() {
+        return id;
     }
 }

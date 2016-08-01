@@ -30,6 +30,5 @@ public class Play extends JFrame
     public static void main (String[] args)
     {
         new Play();
-        new NEATDiagnostics();
     }
 }

@@ -1,10 +1,7 @@
 package Game.neat;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * Created by qfi_2 on 25.07.2016.
@@ -13,12 +10,12 @@ public class Population implements Serializable {
     private static int gen_count = 0;
     private static int conn_count = 0;
 
-    private static final int POPULATION_SIZE = 3;
+    private static final int POPULATION_SIZE = 30;
     private static final int POPULATION_DENOMINATOR = 3;
 
     private static final int MAXIMUM_STALENESS = 20;
 
-    private static final double COMPATIBILITY_THRESHOLD = 5;
+    private static final double COMPATIBILITY_THRESHOLD = 3;
     private static final double C1 = 1;
     private static final double C2 = 1;
     private static final double C3 = 1;
@@ -34,6 +31,8 @@ public class Population implements Serializable {
     private static final double REACTIVATE_CONNECTION_CHANCE = 0.25;
     private static final double INTERSPECIES_MATING_CHANCE = 0.001;
 
+    private static final boolean MUTATE_FIRST_GEN = true;
+
     private double top_fitness = 0;
     private int staleness = 0;
 
@@ -41,26 +40,31 @@ public class Population implements Serializable {
     private ArrayList<Genome> genomes;
     private ArrayList<Species> species;
 
+    private Random random;
+
+    private HashMap<Integer, HashMap<Integer, Integer>> innovationNumbers;
+
     public Population() {
         gen_id = gen_count++;
         genomes = new ArrayList<Genome>();
         species = new ArrayList<Species>();
+        innovationNumbers = new HashMap<Integer, HashMap<Integer, Integer>>();
+        this.random = new Random();
     }
 
-    public Population(Population p) {
-        // TODO: Create offspring, recombine, natural selection
+    public void initializePopulation(ArrayList<Neuron> inputOutputNeurons) {
+        while (genomes.size() < POPULATION_SIZE) {
+            Genome g = new Genome(inputOutputNeurons);
+
+            if (MUTATE_FIRST_GEN) {
+                mutate(g);
+            }
+
+            genomes.add(g);
+        }
 
         for (Genome g : genomes) {
             sortIntoSpecies(g);
-        }
-    }
-
-    public void initializePopulation(ArrayList<Neuron> inputNeurons, ArrayList<Neuron> outputNeurons) {
-        while (genomes.size() < POPULATION_SIZE) {
-            Genome g = new Genome();
-            g.addAllNodes(inputNeurons);
-            g.addAllNodes(outputNeurons);
-            genomes.add(g);
         }
     }
 
@@ -84,7 +88,13 @@ public class Population implements Serializable {
         }
 
         for (Species s : species) {
-            int numOffspring = (int) ((s.getAverageFitness() / totalAverageFitness) * offspringSize + 0.5);
+            int numOffspring;
+
+            if (totalAverageFitness == 0) {
+                numOffspring = (int) ((double) offspringSize / species.size() + 0.5);
+            } else {
+                numOffspring = (int) ((s.getAverageFitness() / totalAverageFitness) * offspringSize + 0.5);
+            }
 
             for (int i = 0; i < numOffspring; i++) {
                 offspring.add(produceOffspring(s));
@@ -92,11 +102,12 @@ public class Population implements Serializable {
         }
 
         for (Species s : species) {
-            Genome rnd = s.getGenomes().get((int) (Math.random() * genomes.size()));
+            Genome rnd = s.getGenomes().get(random.nextInt(s.getGenomes().size()));
             s.setRepresentativeAndResetGenomes(rnd);
         }
 
         genomes.addAll(offspring);
+
 
         for (Genome g : genomes) {
             sortIntoSpecies(g);
@@ -109,12 +120,20 @@ public class Population implements Serializable {
             s.sortBySharedFitness();
             Genome toRemove;
 
+            //DEBUG
+            boolean nothingremoved = false;
+
             for (int i = 0; i < numGenomesToRemove; i++) {
                 if (s.getGenomes().size() > 1) {
                     toRemove = s.getGenomes().get(0);
                     s.getGenomes().remove(0);
                     genomes.remove(toRemove);
+                    nothingremoved = true;
                 }
+            }
+
+            if (!nothingremoved) {
+                System.out.println("wat");
             }
         }
     }
@@ -144,20 +163,20 @@ public class Population implements Serializable {
     }
 
     public void sortIntoSpecies(Genome g) {
-        boolean done = false;
+        boolean foundSpecies = false;
 
-        while (!done) {
-            for (Species s : species) {
-                Genome r = s.getRepresentative();
+        for (Species s : species) {
+            Genome r = s.getRepresentative();
+            double dist = calculateCompatibilityDistance(g, r);
 
-                if (calculateCompatibilityDistance(g, r) < COMPATIBILITY_THRESHOLD) {
-                    s.addGenome(g);
-                    done = true;
-                }
+            if (dist < COMPATIBILITY_THRESHOLD) {
+                s.addGenome(g);
+                foundSpecies = true;
             }
-
-            species.add(new Species(g));
         }
+
+        if (!foundSpecies)
+            species.add(new Species(g));
     }
 
     public void updateFitness(Genome g, double fitness) {
@@ -171,6 +190,10 @@ public class Population implements Serializable {
 
     private double calculateCompatibilityDistance(Genome a, Genome b) {
         int n = getHigherGenomeCount(a, b);
+
+        if (n == 0)
+            return 0;
+
         double e = calculateExcessGenes(a, b);
         double d = calculateDisjointGenes(a, b);
         double w = calculateAvgWeightDifference(a, b);
@@ -229,7 +252,7 @@ public class Population implements Serializable {
     }
 
     private int getHigherGenomeCount(Genome a, Genome b) {
-        return Math.max(a.getGenomeCount(), b.getGenomeCount());
+        return Math.max(a.getGenomeCountWithoutBrickNeurons(), b.getGenomeCountWithoutBrickNeurons());
     }
 
     private Genome produceOffspring(Species s) {
@@ -238,28 +261,30 @@ public class Population implements Serializable {
 
         if (rnd < MATE_CHANCE) {
             Genome child;
-            Genome parentA = genomes.get((int) (Math.random() * genomes.size()));
+            Genome parentA = genomes.get(random.nextInt(genomes.size()));
             Genome parentB;
 
             rnd = Math.random();
 
             if (rnd < INTERSPECIES_MATING_CHANCE) {
-                Species s2 = species.get((int) (Math.random() * species.size()));
+                Species s2 = species.get(random.nextInt(species.size()));
                 ArrayList<Genome> genomes2 = s2.getGenomes();
 
-                parentB = genomes2.get((int) (Math.random() * genomes2.size()));
+                parentB = genomes2.get(random.nextInt(genomes2.size()));
             } else {
-                parentB = genomes.get((int) (Math.random() * genomes.size()));
+                parentB = genomes.get((random.nextInt(genomes.size())));
             }
 
             child = mate(parentA, parentB);
+
             mutate(child);
 
             return child;
         } else {
-            Genome g = genomes.get((int) (Math.random() * genomes.size()));
-            mutate(g);
-            return g;
+            Genome g = genomes.get(random.nextInt(genomes.size()));
+            Genome offspring = new Genome(g);
+            mutate(offspring);
+            return offspring;
         }
     }
 
@@ -273,7 +298,7 @@ public class Population implements Serializable {
         if (a.equals(b))
             child = new Genome(a);
         else {
-            child = new Genome();
+            child = new Genome(a.getMandatoryNodes());
 
             if (equallyfit) {
                 int indexA = 0;
@@ -283,18 +308,30 @@ public class Population implements Serializable {
                 ArrayList<Connection> connectionsB = b.getConnectionGenes();
 
                 while (indexA < connectionsA.size() || indexB < connectionsB.size()) {
-                    Connection first = connectionsA.get(indexA);
-                    Connection second = connectionsB.get(indexB);
-                    int firstInnov = first.getInnov();
-                    int secondInnov = second.getInnov();
+                    Connection first = null;
+                    int firstInnov = -1;
+
+                    if (indexA < connectionsA.size()) {
+                        first = connectionsA.get(indexA);
+                        firstInnov = first.getInnov();
+                    }
+
+                    Connection second = null;
+                    int secondInnov = -1;
+
+                    if (indexB < connectionsB.size()) {
+                        second = connectionsB.get(indexB);
+                        secondInnov = second.getInnov();
+                    }
+
                     Double rnd = Math.random();
 
-                    if (first.getInnov() == second.getInnov()) {
+                    if (first != null && second != null && first.getInnov() == second.getInnov()) {
                         Connection c;
                         if (rnd < 0.5) {
-                            c = child.addConnectionGene(first);
+                            c = child.addFromExistingConnection(first);
                         } else {
-                            c = child.addConnectionGene(second);
+                            c = child.addFromExistingConnection(second);
                         }
 
                         if (!first.isEnabled() && !second.isEnabled() && Math.random() < REACTIVATE_CONNECTION_CHANCE) {
@@ -304,16 +341,24 @@ public class Population implements Serializable {
                         indexA++;
                         indexB++;
                     } else {
-                        if (firstInnov < secondInnov) {
-                            if (rnd < 0.5) {
-                                child.addConnectionGene(first);
-                            }
+                        if (firstInnov == -1) {
+                            child.addFromExistingConnection(second);
+                            indexB++;
+                        } else if (secondInnov == -1) {
+                            child.addFromExistingConnection(first);
                             indexA++;
                         } else {
-                            if (rnd < 0.5) {
-                                child.addConnectionGene(second);
+                            if (firstInnov < secondInnov) {
+                                if (rnd < 0.5) {
+                                    child.addFromExistingConnection(first);
+                                }
+                                indexA++;
+                            } else {
+                                if (rnd < 0.5) {
+                                    child.addFromExistingConnection(second);
+                                }
+                                indexB++;
                             }
-                            indexB++;
                         }
                     }
                 }
@@ -333,19 +378,23 @@ public class Population implements Serializable {
 
                 while (indexFitter < fitterConnectionGenes.size()) {
                     Connection fitterConnection = fitterConnectionGenes.get(indexFitter);
-                    Connection lesserConnection = lesserConnectionGenes.get(indexLesser);
+                    Connection lesserConnection = null;
+
+                    if (indexLesser < lesserConnectionGenes.size()) {
+                        lesserConnection = lesserConnectionGenes.get(indexLesser);
+                    }
 
                     if (fitterConnection.getInnov() == lesserConnection.getInnov()) {
                         if (Math.random() < 0.5) {
-                            child.addConnectionGene(fitterConnection);
+                            child.addFromExistingConnection(fitterConnection);
                         } else {
-                            child.addConnectionGene(lesserConnection);
+                            child.addFromExistingConnection(lesserConnection);
                         }
                         indexFitter++;
                         indexLesser++;
 
                     } else if (lessFit.isDisjoint(fitterConnection) || lessFit.isExcess(fitterConnection)) {
-                        child.addConnectionGene(fitterConnection);
+                        child.addFromExistingConnection(fitterConnection);
                         indexFitter++;
                     } else if (fitter.isDisjoint(lesserConnection) || fitter.isExcess(lesserConnection)) {
                         indexLesser++;
@@ -375,23 +424,28 @@ public class Population implements Serializable {
         rnd = Math.random();
 
         if (rnd < EDGE_PERTURB_CHANCE) {
-            perturbEdges(g);
+            //perturbEdges(g);
         }
     }
 
     private void nodeMutation(Genome g) {
         ArrayList<Connection> connections = new ArrayList<Connection>(g.getEnabledConnectionGenes());
 
-        Connection c = connections.get((int) (Math.random() * connections.size()));
+        if (!connections.isEmpty()) {
+            Connection c = connections.get(random.nextInt(connections.size()));
 
-        Neuron n = new Neuron(Neuron.Neuron_Type.HIDDEN);
-        Neuron in = c.getIn();
-        Neuron out = c.getOut();
+            Neuron n = new Neuron(Neuron.Neuron_Type.HIDDEN);
+            Neuron in = c.getIn();
+            Neuron out = c.getOut();
 
-        c.setEnabled(false);
+            c.setEnabled(false);
 
-        in.addSuccessor(new Connection(in, n, getNextInnov(), 1, g));
-        n.addSuccessor(new Connection(n, out, getNextInnov(), c.getWeight(), g));
+            Connection c1 = new Connection(in, n, getNextInnov(in.getId(), out.getId()), 1, g);
+            Connection c2 = new Connection(n, out, getNextInnov(in.getId(), out.getId()), c.getWeight(), g);
+
+            g.addFromExistingConnection(c1);
+            g.addFromExistingConnection(c2);
+        }
     }
 
     private void edgeMutation(Genome g) {
@@ -401,16 +455,17 @@ public class Population implements Serializable {
         Neuron out;
 
         do {
-            in = validSourceNodes.get((int) (Math.random() * validSourceNodes.size()));
+            in = validSourceNodes.get(random.nextInt(validSourceNodes.size()));
         } while (in == null || in.isOutputNeuron());
 
         ArrayList<Neuron> validDestNodes = g.getNodesMinDepth(in.getDepth() + 1);
 
-        while (!validDestNodes.isEmpty() && addedConnection) {
-            out = validDestNodes.get((int) (Math.random() * validDestNodes.size()));
+        while (!validDestNodes.isEmpty() && !addedConnection) {
+            out = validDestNodes.get(random.nextInt(validDestNodes.size()));
             if (!in.hasSuccessor(out)) {
                 double connectionWeight = Math.random() * MUTATION_WEIGHT_BOUND - MUTATION_WEIGHT_BOUND;
-                in.addSuccessor(new Connection(in, out, getNextInnov(), connectionWeight, g));
+                Connection c = new Connection(in, out, getNextInnov(in.getId(), out.getId()), connectionWeight, g);
+                g.addFromExistingConnection(c);
                 addedConnection = true;
             }
 
@@ -436,8 +491,29 @@ public class Population implements Serializable {
         return top_fitness;
     }
 
+    public ArrayList<Species> getSpecies() {
+        return species;
+    }
+
     // TODO: Check if exists
-    private int getNextInnov() {
-        return conn_count++;
+    private int getNextInnov(int inId, int outId) {
+        HashMap<Integer, Integer> innovNumbersForInId = innovationNumbers.get(inId);
+        int resultInnov = -1;
+
+        if (innovNumbersForInId != null) {
+            for (Integer out : innovNumbersForInId.keySet()) {
+                if (out == outId)
+                    return innovNumbersForInId.get(out);
+            }
+
+            resultInnov = conn_count++;
+            innovNumbersForInId.put(outId, resultInnov);
+        } else {
+            innovationNumbers.put(inId, new HashMap<Integer, Integer>());
+            resultInnov = conn_count++;
+            innovationNumbers.get(inId).put(outId, resultInnov);
+        }
+
+        return resultInnov;
     }
 }
