@@ -47,7 +47,7 @@ public class Simulation extends Observable implements Observer {
 
 
         p.initializePopulation(inputOutputNeurons);
-        //enterDebugData();
+        enterDebugData();
 
         putNewGenerationsIntoQueue();
 
@@ -124,11 +124,6 @@ public class Simulation extends Observable implements Observer {
         double dirLeft = current.getLeftOutput();
         double dirRight = current.getRightOutput();
 
-        if (gameStats.getBricks()[0][0] && dirLeft == 0 && !gameStats.getBricks()[0][6])
-            System.out.println();
-        if (gameStats.getBricks()[0][6] == true && dirRight == 0 && !gameStats.getBricks()[0][0])
-            System.out.println();
-
         controlPaddle(dirLeft, dirRight);
 
         current.reset();
@@ -143,11 +138,16 @@ public class Simulation extends Observable implements Observer {
     }
 
     private void finishSimulationForCurrentNetwork() {
-        calculateCurrentFitness();
+        double fitness = calculateCurrentFitness();
+        calculatedFitnesses.put(current, fitness);
+        p.updateFitness(current.getGenome(), fitness);
+
         getNewCurrentNetwork();
     }
 
     private void putNewGenerationsIntoQueue() {
+        calculatedFitnesses.clear();
+
         for (Genome g : p.getGenomes()) {
             remainingNetsInGeneration.add(new NeuralNetwork(g));
         }

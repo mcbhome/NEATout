@@ -67,6 +67,12 @@ public class Board extends JPanel
         inGame = true;
     }
 
+    public void newLevel() {
+        gameInit();
+        randomizeBricks();
+        gameStats.incrementLevel();
+    }
+
     /**
      * Draws all components to screen
      * depending on the game state.
@@ -192,6 +198,7 @@ public class Board extends JPanel
             if (!skippedMainMenu) {
                 System.out.println("NEAT, WIP");
                 simulationMode = true;
+                skippedMainMenu = true;
                 startNewGame();
 
                 new NEATDiagnostics();
@@ -202,20 +209,14 @@ public class Board extends JPanel
     /**
      * Event listener. Pauses game when
      * ESC is pressed
-     *
-     * @param e
+     *f
      */
-    public void pauseGame(KeyEvent e)
+    public void pauseGame()
     {
-        int key = e.getKeyCode();
-
-        if (key == KeyEvent.VK_ESCAPE)
+        if (skippedMainMenu)
         {
-            if (skippedMainMenu && !simulationMode)
-            {
-                inGame = !inGame;
-                gamePaused = !gamePaused;
-            }
+            inGame = !inGame;
+            gamePaused = !gamePaused;
         }
     }
 
@@ -514,9 +515,9 @@ public class Board extends JPanel
     {
         synchronized (bricks) {
             if (bricks.size() == 0) {
-                gameStats.incrementLevel();
                 gameStats.setGameWon(true);
                 gameInit();
+                newLevel();
             }
         }
     }
@@ -572,7 +573,10 @@ public class Board extends JPanel
         {
             gameStats.getPaddle().keyPressed(e);
             keyToStart(e);
-            pauseGame(e);
+
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                pauseGame();
+            }
         }
     }
 

@@ -82,6 +82,10 @@ public class Species {
         genomes.add(g);
     }
 
+    public boolean hasGenome(Genome g) {
+        return this.genomes.contains(g);
+    }
+
     public ArrayList<Genome> getGenomes() {
         return genomes;
     }

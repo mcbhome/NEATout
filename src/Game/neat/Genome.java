@@ -21,6 +21,8 @@ public class Genome {
     private double sharedFitness;
     private int highestInnov;
 
+    private int layers;
+
     public Genome() {
         id = ++numGenomes;
 
@@ -328,6 +330,12 @@ public class Genome {
             leftOutput.setDepth(Integer.MAX_VALUE);
             rightOutput.setDepth(Integer.MAX_VALUE);
         }
+
+        layers = curDepth;
+    }
+
+    public int getLayers() {
+        return layers;
     }
 
     public int getGenomeCountWithoutBrickNeurons() {

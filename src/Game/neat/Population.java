@@ -10,7 +10,7 @@ public class Population implements Serializable {
     private static int gen_count = 0;
     private static int conn_count = 0;
 
-    private static final int POPULATION_SIZE = 30;
+    private static final int POPULATION_SIZE = 6;
     private static final int POPULATION_DENOMINATOR = 3;
 
     private static final int MAXIMUM_STALENESS = 20;
@@ -112,6 +112,13 @@ public class Population implements Serializable {
         for (Genome g : genomes) {
             sortIntoSpecies(g);
         }
+
+        for (Genome g: genomes) {
+            g.setFitness(0);
+            g.setSharedFitness(0);
+        }
+
+        this.top_fitness = 0;
     }
 
     private void cullSpecies() {
@@ -181,6 +188,17 @@ public class Population implements Serializable {
 
     public void updateFitness(Genome g, double fitness) {
         g.setFitness(fitness);
+        Species s = null;
+
+        for (Species sp : species) {
+            if (sp.hasGenome(g)) {
+                s = sp;
+            }
+        }
+
+        if (s == null)
+            System.out.println();
+        g.setSharedFitness(fitness / s.getGenomes().size());
 
         if (fitness > top_fitness) {
             top_fitness = fitness;
@@ -384,20 +402,25 @@ public class Population implements Serializable {
                         lesserConnection = lesserConnectionGenes.get(indexLesser);
                     }
 
-                    if (fitterConnection.getInnov() == lesserConnection.getInnov()) {
-                        if (Math.random() < 0.5) {
-                            child.addFromExistingConnection(fitterConnection);
-                        } else {
-                            child.addFromExistingConnection(lesserConnection);
-                        }
-                        indexFitter++;
-                        indexLesser++;
-
-                    } else if (lessFit.isDisjoint(fitterConnection) || lessFit.isExcess(fitterConnection)) {
+                    if (lesserConnection == null) {
                         child.addFromExistingConnection(fitterConnection);
                         indexFitter++;
-                    } else if (fitter.isDisjoint(lesserConnection) || fitter.isExcess(lesserConnection)) {
-                        indexLesser++;
+                    } else {
+                        if (fitterConnection.getInnov() == lesserConnection.getInnov()) {
+                            if (Math.random() < 0.5) {
+                                child.addFromExistingConnection(fitterConnection);
+                            } else {
+                                child.addFromExistingConnection(lesserConnection);
+                            }
+                            indexFitter++;
+                            indexLesser++;
+
+                        } else if (lessFit.isDisjoint(fitterConnection) || lessFit.isExcess(fitterConnection)) {
+                            child.addFromExistingConnection(fitterConnection);
+                            indexFitter++;
+                        } else if (fitter.isDisjoint(lesserConnection) || fitter.isExcess(lesserConnection)) {
+                            indexLesser++;
+                        }
                     }
                 }
             }
@@ -485,6 +508,16 @@ public class Population implements Serializable {
 
     public ArrayList<Genome> getGenomes() {
         return this.genomes;
+    }
+
+    public Genome getGenomeById(int id) {
+        for (Genome g : genomes) {
+            if (g.getId() == id) {
+                return g;
+            }
+        }
+
+        return null;
     }
 
     public double getTopFitness() {

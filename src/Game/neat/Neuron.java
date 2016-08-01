@@ -5,7 +5,7 @@ import java.util.ArrayList;
 /**
  * Created by qfi_2 on 25.07.2016.
  */
-class Neuron {
+public class Neuron {
 
     public enum Neuron_Type { SENSOR_BRICK, SENSOR_PADDLE, SENSOR_BALL, HIDDEN, OUTPUT_LEFT, OUTPUT_RIGHT }
     private final int id;
@@ -113,6 +113,10 @@ class Neuron {
         }
 
         this.output = 0;
+    }
+
+    public double getInput() {
+        return input;
     }
 
     public String toString() {
