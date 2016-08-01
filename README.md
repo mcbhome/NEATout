@@ -2,10 +2,13 @@ Breakout - NEAT
 ========
 
 The goal of this repository is to get a working version of NeuroEvolution of Augmenting Topologies (NEAT) running with a simple breakout clone from the original repository.
-When finished, there should be an additional GUI to show training time, number of networks, highest fitness etc.
+When finished, there should be an additional GUI to show information about the whole population, a single network or statistics about training time.
 The whole thing is supposed to be serializable so the learning is persistent.
 
+NEAT is an algorithm to evolve neural networks from a minimal state using an evolutionary approach. It features speciation, different kinds of mutation, fitness sharing and many other cool things.
 For more information on NEAT, read this paper: http://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf
+
+Please note that this version is intended to work with IntelliJ IDEA. If you want to compile this project from source, you should probably use it, especially since the user interface was generated using it. When the project reaches a state where a functional version is existant, I can supply ready-to-run JARs.
 
 -- Original Description --
 This program is a reimplementation of the classic Breakout game, which was released in 1976 by Atari. The player bounces a ball on a paddle controlled by the keyboard, which bounces off the top and side walls of the screen. Rows of bricks exist at the top of the screen which are destroyed when the ball hits them. Points are awarded to the player for each brick destroyed and when all are destroyed, the next level, which is randomly generated, is presented. The player has 3 lives, which are lost when the ball touches the bottom of the screen. 
@@ -14,15 +17,3 @@ The player is presented with a main menu at the start of the game, which starts 
 ![Example](https://raw.github.com/zacoppotamus/Breakout/master/Screenshot%202.png) ![Example](https://raw.github.com/zacoppotamus/Breakout/master/Screenshot%201.png)
 
 
-To-Do/Bugs
----
-
-The most urgent bug-fix includes packaging the fonts used in the game with the source files to enable a uniform experience to anyone playing the game from a variety of different operating systems. In this installment of the game, the two fonts used in the game are provided along with the source code.
-Potential enhancements to the game include the ability for new levels to be created by reading in a text file and the introduction of various power-ups, such as extra lives, slowing down the ball or faster paddle movement. There could also be an added audio component to the game, such as a soundtrack and sound effects for when the paddle hits the ball.
-
-How To Play
----
-```
-javac Play.java
-java Play
-```
