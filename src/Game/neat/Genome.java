@@ -1,12 +1,14 @@
 package Game.neat;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.*;
 
 /**
  * Created by qfi_2 on 25.07.2016.
  */
-public class Genome {
+public class Genome implements Serializable {
     private static int numGenomes = 0;
 
     private int id;
@@ -17,8 +19,8 @@ public class Genome {
     private Neuron leftOutput;
     private Neuron rightOutput;
     private ArrayList<Connection> connectionGenes;
-    private double fitness;
-    private double sharedFitness;
+    private transient double fitness;
+    private transient double sharedFitness;
     private int highestInnov;
 
     private int layers;
@@ -33,6 +35,13 @@ public class Genome {
         fitness = 0;
         sharedFitness = 0;
 
+    }
+
+    private Object readResolve() throws ObjectStreamException {
+        this.fitness = 0;
+        this.sharedFitness = 0;
+
+        return this;
     }
 
     public Genome(Genome parent) {

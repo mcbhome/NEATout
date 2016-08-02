@@ -2,12 +2,16 @@ package Game.UserInterface;
 
 import Game.Breakout.GameStats;
 import Game.neat.*;
+import javafx.stage.FileChooser;
+import sun.util.calendar.Gregorian;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.*;
+import java.util.GregorianCalendar;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Vector;
@@ -46,9 +50,9 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private JComboBox networkDetailComboBox;
     private JButton networkDetaiLoadCurrent;
     private JButton networkDetailLoadID;
-    private JPanel networkDetailBricks;
-    private MyTableModel tableModel;
+    private JFileChooser fileChooser;
     private DefaultComboBoxModel comboModel;
+    private MyTableModel tableModel;
     private Simulation simulation;
     private Population population;
     private GameStats gameStats;
@@ -65,13 +69,46 @@ public class NEATDiagnostics extends JFrame implements Observer {
 
         showCurrent = true;
 
+        fileChooser = new JFileChooser();
+
         JMenuBar menubar = new JMenuBar();
         JMenu file = new JMenu("File");
-        JMenuItem item = new JMenuItem("Save current population to file...");
+
+        JMenuItem item = new JMenuItem("Save");
         item.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //TODO: Object serialization
+                try {
+                    serializeSim();
+                } catch (IOException exception) {
+                    System.out.println("Error during sim serialization");
+                    exception.printStackTrace();
+                }
+            }
+        });
+
+        file.add(item);
+
+        item = new JMenuItem("Save as...");
+        item.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int returnVal = fileChooser.showSaveDialog(NEATDiagnostics.this);
+
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    File file = fileChooser.getSelectedFile();
+
+                    try {
+                        if (!file.exists()) {
+                            file.createNewFile();
+                        }
+
+                        serializeSim(file);
+                    } catch (IOException exception) {
+                        System.out.println("Error during sim serialization");
+                        exception.printStackTrace();
+                    }
+                }
             }
         });
 
@@ -81,7 +118,14 @@ public class NEATDiagnostics extends JFrame implements Observer {
         item.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //TODO: Object loading
+                fileChooser.showOpenDialog(NEATDiagnostics.this);
+                try {
+                    Simulation sim = loadSim(fileChooser.getSelectedFile());
+                    setSimulation(sim);
+                    updateUIComponents();
+                } catch (Exception exception) {
+
+                }
             }
         });
 
@@ -131,7 +175,6 @@ public class NEATDiagnostics extends JFrame implements Observer {
         pack();
 
         fillTable();
-
         updateLabels();
 
         gameStats.addObserver(this);
@@ -179,6 +222,12 @@ public class NEATDiagnostics extends JFrame implements Observer {
         }
 
         updateLabels();
+    }
+
+    private void updateUIComponents() {
+        this.updateLabels();
+        this.updateComboBox();
+        this.fillTable();
     }
 
     private void updateComboBox() {
@@ -240,6 +289,53 @@ public class NEATDiagnostics extends JFrame implements Observer {
                 tableModel.addRow(new String[]{"" + g.getId(), "" + s.getId(), "" + g.getNodeGenes().size(), "" + g.getConnectionGenes().size() + " (" + g.getActiveConnectionCount() + ")", "" + String.format("%.2f", g.getFitness()), "" + String.format("%.2f", g.getSharedFitness())});
             }
         }
+    }
+
+    private void serializeSim() throws IOException {
+        GregorianCalendar cal = new GregorianCalendar();
+        String fileName = "simulation_gen" + simulation.getPopulation().getGenerationId() +
+                "_" + cal.get(GregorianCalendar.DAY_OF_MONTH) +
+                "-" + cal.get(GregorianCalendar.MONTH) +
+                "-" + cal.get(GregorianCalendar.YEAR) +
+                "_" + cal.get(GregorianCalendar.MINUTE) +
+                "-" + cal.get(GregorianCalendar.HOUR_OF_DAY) +
+                ".ser";
+
+        File f = new File("./" + fileName);
+
+        if (!f.exists()) {
+            f.createNewFile();
+        }
+
+        serializeSim(f);
+    }
+
+    private Simulation loadSim(File f) throws FileNotFoundException, IOException, ClassNotFoundException {
+        FileInputStream fis = new FileInputStream(f);
+        ObjectInputStream ois = new ObjectInputStream(fis);
+
+        Simulation res = (Simulation) ois.readObject();
+
+        fis.close();
+        ois.close();
+
+        return res;
+    }
+
+    private void serializeSim(File f) throws IOException {
+        FileOutputStream fos = new FileOutputStream(f);
+        ObjectOutputStream oos = new ObjectOutputStream(fos);
+
+        oos.writeObject(simulation);
+
+        fos.close();
+        oos.close();
+    }
+
+    private void setSimulation(Simulation s) {
+        this.simulation = s;
+        this.population = s.getPopulation();
+        this.curDetailGenome = s.getCurrent().getGenome();
     }
 
     /**

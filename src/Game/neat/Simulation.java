@@ -1,14 +1,15 @@
 package Game.neat;
 import Game.Breakout.GameStats;
 import Game.Breakout.Paddle;
-import Game.UserInterface.NEATDiagnostics;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * Created by qfi_2 on 26.07.2016.
  */
-public class Simulation extends Observable implements Observer {
+public class Simulation extends Observable implements Observer, Serializable {
     public enum Update_Args {PLAYER_DIED, BRICK_CHANGE, SCORE_CHANGED, MOVEMENT, MISC, NEW_GAME, NEW_GENERATION}
     private static final double SCORE_FACTOR = 1.0;
     private static final double SHOTS_FACTOR = -10.0;
@@ -17,11 +18,10 @@ public class Simulation extends Observable implements Observer {
 
     private Population p;
     private NeuralNetwork current;
-    private GameStats gameStats;
-    private LinkedList<NeuralNetwork> remainingNetsInGeneration;
-    private HashMap<NeuralNetwork, Double> calculatedFitnesses;
 
-    private boolean curNetworkInputsSet;
+    private transient GameStats gameStats;
+    private transient LinkedList<NeuralNetwork> remainingNetsInGeneration;
+    private transient HashMap<NeuralNetwork, Double> calculatedFitnesses;
 
     public Simulation(GameStats gameStats) {
         this.gameStats = gameStats;
@@ -47,9 +47,9 @@ public class Simulation extends Observable implements Observer {
 
 
         p.initializePopulation(inputOutputNeurons);
-        enterDebugData();
+        //enterDebugData();
 
-        putNewGenerationsIntoQueue();
+        putGenerationIntoQueue();
 
         gameStats.addObserver(this);
     }
@@ -66,6 +66,9 @@ public class Simulation extends Observable implements Observer {
         }
     }
 
+    public Simulation() {
+        super();
+    }
 
     @Override
     public void update(Observable o, Object arg) {
@@ -98,7 +101,7 @@ public class Simulation extends Observable implements Observer {
             current = null;
             calculateFinalFitnessValues();
             p.newGeneration();
-            putNewGenerationsIntoQueue();
+            putGenerationIntoQueue();
         }
 
         initBrickInputsForCurrentNetwork();
@@ -145,7 +148,7 @@ public class Simulation extends Observable implements Observer {
         getNewCurrentNetwork();
     }
 
-    private void putNewGenerationsIntoQueue() {
+    private void putGenerationIntoQueue() {
         calculatedFitnesses.clear();
 
         for (Genome g : p.getGenomes()) {
@@ -183,6 +186,20 @@ public class Simulation extends Observable implements Observer {
         return p;
     }
 
+    private Object readResolve() throws ObjectStreamException {
+        this.gameStats = GameStats.getInstance();
+        this.remainingNetsInGeneration = new LinkedList<NeuralNetwork>();
+        this.calculatedFitnesses = new HashMap<NeuralNetwork, Double>();
+
+        putGenerationIntoQueue();
+
+        initBrickInputsForCurrentNetwork();
+
+        gameStats.addObserver(this);
+
+        return this;
+    }
+
     public static class ObservableArg {
         private Update_Args type;
         private int i;
@@ -196,6 +213,7 @@ public class Simulation extends Observable implements Observer {
         }
 
         public ObservableArg(Update_Args type, int i, int j, boolean brickState) {
+            this.type = type;
             this.i = i;
             this.j = j;
             this.brickState = brickState;

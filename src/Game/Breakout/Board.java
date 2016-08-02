@@ -19,8 +19,6 @@ public class Board extends JPanel
 {
     private ArrayList<Brick> bricks;
     private Timer timer;
-    private boolean inGame = false;
-    private boolean gamePaused = false;
     private boolean skippedMainMenu = false;
     private GameStats gameStats;
     private Commons commons;
@@ -63,8 +61,8 @@ public class Board extends JPanel
         gameStats.clearBricks();
         randomizeBricks();
         gameStats.newGame();
-        gamePaused = false;
-        inGame = true;
+        gameStats.setGamePaused(false);
+        gameStats.setInGame(true);
     }
 
     public void newLevel() {
@@ -88,7 +86,7 @@ public class Board extends JPanel
         Image image = img.getImage();
         g.drawImage(image, 0, 0, null);
 
-        if (inGame)
+        if (gameStats.isInGame())
         {
             drawGameState(g);
         }
@@ -101,7 +99,7 @@ public class Board extends JPanel
                     drawGameOver(g);
                 }
             }
-            else if (gamePaused)
+            else if (gameStats.isGamePaused())
             {
                 drawGameState(g);
                 drawGamePaused(g);
@@ -183,14 +181,13 @@ public class Board extends JPanel
             }
             if (!skippedMainMenu)
             {
-                inGame = true;
+                gameStats.setInGame(true);
                 skippedMainMenu = true;
                 startNewGame();
             }
-            if (gamePaused)
+            if (gameStats.isGamePaused())
             {
-                gamePaused = !gamePaused;
-                inGame = true;
+                gameStats.unPauseGame();
             }
         }
 
@@ -215,8 +212,7 @@ public class Board extends JPanel
     {
         if (skippedMainMenu)
         {
-            inGame = !inGame;
-            gamePaused = !gamePaused;
+            gameStats.pauseGame();
         }
     }
 
@@ -401,7 +397,6 @@ public class Board extends JPanel
         {
             for (int j=10, l = 0; j<commons.getWidth()-15; j += commons.getBWidth()+5, l++)
             {
-                // Generate int between 0 or 1
                 randomInt = r.nextInt(2);
                 if (randomInt == 1) {
                     synchronized (bricks) {
@@ -411,7 +406,6 @@ public class Board extends JPanel
                 }
             }
         }
-
     }
 
     /**
@@ -474,7 +468,7 @@ public class Board extends JPanel
         if (gameStats.getLives() == 0)
         {
             if (!simulationMode) {
-                inGame = false;
+                gameStats.setInGame(false);
             }
             gameStats.setPlayerIsDead();
             gameStats.setGameLost(true);
@@ -486,10 +480,10 @@ public class Board extends JPanel
         if (gameStats.getBall().getY() + (2 * gameStats.getBall().getRadius()) == commons.getHeight())
         {
             if (!simulationMode)
-                inGame = !inGame;
+                gameStats.setInGame(false);
 
             if (gameStats.getLives() != 0 && !simulationMode)
-                gamePaused = !gamePaused;
+                gameStats.setGamePaused(true);
 
             gameStats.playerDied();
 
@@ -584,7 +578,7 @@ public class Board extends JPanel
     {
         public void run()
         {
-            if (inGame)
+            if (gameStats.isInGame())
             {
                 gameStats.getPaddle().move();
                 gameStats.getBall().move();

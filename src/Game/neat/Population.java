@@ -1,5 +1,6 @@
 package Game.neat;
 
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -33,14 +34,14 @@ public class Population implements Serializable {
 
     private static final boolean MUTATE_FIRST_GEN = true;
 
-    private double top_fitness = 0;
-    private int staleness = 0;
+    private transient double top_fitness = 0;
+    private transient int staleness = 0;
 
     private int gen_id;
     private ArrayList<Genome> genomes;
     private ArrayList<Species> species;
 
-    private Random random;
+    private transient Random random;
 
     private HashMap<Integer, HashMap<Integer, Integer>> innovationNumbers;
 
@@ -127,20 +128,12 @@ public class Population implements Serializable {
             s.sortBySharedFitness();
             Genome toRemove;
 
-            //DEBUG
-            boolean nothingremoved = false;
-
             for (int i = 0; i < numGenomesToRemove; i++) {
                 if (s.getGenomes().size() > 1) {
                     toRemove = s.getGenomes().get(0);
                     s.getGenomes().remove(0);
                     genomes.remove(toRemove);
-                    nothingremoved = true;
                 }
-            }
-
-            if (!nothingremoved) {
-                System.out.println("wat");
             }
         }
     }
@@ -528,7 +521,6 @@ public class Population implements Serializable {
         return species;
     }
 
-    // TODO: Check if exists
     private int getNextInnov(int inId, int outId) {
         HashMap<Integer, Integer> innovNumbersForInId = innovationNumbers.get(inId);
         int resultInnov = -1;
@@ -548,5 +540,25 @@ public class Population implements Serializable {
         }
 
         return resultInnov;
+    }
+
+    public Object readResolve() throws ObjectStreamException {
+        this.staleness = 0;
+        this.top_fitness = 0;
+        this.random = new Random();
+
+        if (this.gen_id >= gen_count) {
+            gen_count = gen_id + 1;
+        }
+
+        for (Genome g : genomes) {
+            for (Connection c : g.getConnectionGenes()) {
+                if (c.getInnov() >= conn_count) {
+                    conn_count = c.getInnov() + 1;
+                }
+            }
+        }
+
+        return this;
     }
 }

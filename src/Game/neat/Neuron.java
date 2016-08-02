@@ -1,22 +1,25 @@
 package Game.neat;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
  * Created by qfi_2 on 25.07.2016.
  */
-public class Neuron {
+public class Neuron implements Serializable {
 
-    public enum Neuron_Type { SENSOR_BRICK, SENSOR_PADDLE, SENSOR_BALL, HIDDEN, OUTPUT_LEFT, OUTPUT_RIGHT }
-    private final int id;
-    private static int num_neurons = 0;
-    private double output;
-    private double input;
-    private static final double SIGMOID_STEEPNESS = 5.0;
-    private ArrayList<Connection> successors;
-    private Neuron_Type type;
+    public enum Neuron_Type { BIAS, SENSOR_BRICK, SENSOR_PADDLE, SENSOR_BALL, HIDDEN, OUTPUT_LEFT, OUTPUT_RIGHT }
 
-    private int depth;
+    protected final int id;
+    protected static int num_neurons = 0;
+    protected transient double output;
+    protected transient double input;
+    protected static final double SIGMOID_STEEPNESS = 5.0;
+    protected ArrayList<Connection> successors;
+    protected Neuron_Type type;
+
+    protected int depth;
 
     public Neuron (Neuron_Type type) {
         this.id = num_neurons++;
@@ -55,7 +58,7 @@ public class Neuron {
     }
 
     public double getOutput() {
-        return output;
+        return (this.type == Neuron_Type.BIAS) ? 1 : output;
     }
 
     public void propagateOutputToSuccessors() {
@@ -121,5 +124,16 @@ public class Neuron {
 
     public String toString() {
         return "ID: " + this.getId() + ", Input: " + this.input + ", Output: " + this.output;
+    }
+
+    private Object readResolve() throws ObjectStreamException {
+        this.input = 0;
+        this.output = 0;
+
+        if (this.id >= num_neurons) {
+            num_neurons = this.id + 1;
+        }
+
+        return this;
     }
 }

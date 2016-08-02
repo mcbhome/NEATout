@@ -1,9 +1,12 @@
 package Game.neat;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
+
 /**
  * Created by qfi_2 on 27.07.2016.
  */
-public class BrickInputNeuron extends Neuron {
+public class BrickInputNeuron extends Neuron implements Serializable {
     private int i;
     private int j;
 
@@ -25,5 +28,12 @@ public class BrickInputNeuron extends Neuron {
 
     public int getJ() {
         return j;
+    }
+
+    private Object readResolve() throws ObjectStreamException {
+        this.input = 0;
+        this.output = 0;
+
+        return this;
     }
 }

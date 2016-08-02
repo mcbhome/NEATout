@@ -19,6 +19,8 @@ public class GameStats extends Observable {
     Ball ball;
     private boolean gameWon;
     private boolean gameLost;
+    private boolean inGame;
+    private boolean gamePaused;
     private int level;
     private int lives;
     private int score;
@@ -62,6 +64,11 @@ public class GameStats extends Observable {
         ball = new Ball(150, 100, 5);
         ball.reset();
         gameStarted = true;
+    }
+
+    public void resetGame() {
+        newGame();
+        gameInit();
     }
 
     public void playerDied() {
@@ -199,6 +206,32 @@ public class GameStats extends Observable {
 
     public boolean isPlayerDead() {
         return playerIsDead;
+    }
+
+    public boolean isInGame() {
+        return inGame;
+    }
+
+    public void setInGame(boolean inGame) {
+        this.inGame = inGame;
+    }
+
+    public boolean isGamePaused() {
+        return gamePaused;
+    }
+
+    public void setGamePaused(boolean gamePaused) {
+        this.gamePaused = gamePaused;
+    }
+
+    public void pauseGame() {
+        this.inGame = false;
+        this.gamePaused = true;
+    }
+
+    public void unPauseGame() {
+        this.inGame = true;
+        this.gamePaused = false;
     }
 
     public void clearBricks() {

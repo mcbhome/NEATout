@@ -1,5 +1,6 @@
 package Game.neat;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -7,7 +8,7 @@ import java.util.Comparator;
 /**
  * Created by qfi_2 on 25.07.2016.
  */
-public class Species {
+public class Species implements Serializable {
     private static int species_count = 0;
     private int id;
     private ArrayList<Genome> genomes;

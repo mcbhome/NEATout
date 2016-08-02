@@ -1,12 +1,13 @@
 package Game.neat;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
  * Created by qfi_2 on 25.07.2016.
  */
-public class NeuralNetwork {
+public class NeuralNetwork implements Serializable {
     private Neuron[][] brickInputNeurons;
     private Neuron paddleInputNeuron;
     private Neuron ballInputNeuron;
