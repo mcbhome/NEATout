@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="Game.UserInterface.NEATDiagnostics">
-  <grid id="27dc6" binding="mainPane" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+  <grid id="27dc6" binding="mainPane" layout-manager="GridLayoutManager" row-count="2" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="10" left="10" bottom="10" right="10"/>
     <constraints>
-      <xy x="20" y="20" width="901" height="528"/>
+      <xy x="20" y="20" width="901" height="581"/>
     </constraints>
     <properties/>
     <border type="none"/>
     <children>
       <tabbedpane id="3db86" binding="NetworkPopulationTabbedPane">
         <constraints>
-          <grid row="0" column="0" row-span="1" col-span="2" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
+          <grid row="1" column="0" row-span="1" col-span="2" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
             <preferred-size width="200" height="200"/>
           </grid>
         </constraints>
@@ -417,6 +417,51 @@
           </grid>
         </children>
       </tabbedpane>
+      <toolbar id="5628f" binding="toolBar">
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false">
+            <preferred-size width="-1" height="20"/>
+          </grid>
+        </constraints>
+        <properties>
+          <floatable value="false"/>
+        </properties>
+        <border type="none"/>
+        <children>
+          <component id="b827d" class="javax.swing.JButton" binding="playButton">
+            <constraints/>
+            <properties>
+              <icon value="Game/UserInterface/Icons/play24x24.png"/>
+              <text value=""/>
+              <toolTipText value="Start/Resume simulation"/>
+            </properties>
+          </component>
+          <component id="35fc8" class="javax.swing.JButton" binding="pauseButton">
+            <constraints/>
+            <properties>
+              <icon value="Game/UserInterface/Icons/pause24x24.png"/>
+              <text value=""/>
+              <toolTipText value="Pause simulation"/>
+            </properties>
+          </component>
+          <component id="f15b6" class="javax.swing.JButton" binding="restartGenerationButton">
+            <constraints/>
+            <properties>
+              <icon value="Game/UserInterface/Icons/restart24x24.png"/>
+              <text value=""/>
+              <toolTipText value="Restart simulation for current generation"/>
+            </properties>
+          </component>
+          <component id="92f87" class="javax.swing.JButton" binding="newPopulationButton">
+            <constraints/>
+            <properties>
+              <icon value="Game/UserInterface/Icons/new24x24.png"/>
+              <text value=""/>
+              <toolTipText value="Start with new population"/>
+            </properties>
+          </component>
+        </children>
+      </toolbar>
     </children>
   </grid>
 </form>

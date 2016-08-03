@@ -94,4 +94,8 @@ public class Species implements Serializable {
     public int getId() {
         return id;
     }
+
+    public static void resetSpeciesCount() {
+        species_count = 0;
+    }
 }

@@ -19,6 +19,8 @@ public class Simulation extends Observable implements Observer, Serializable {
     private Population p;
     private NeuralNetwork current;
 
+    private ArrayList<Neuron> mandatoryNeurons;
+
     private transient GameStats gameStats;
     private transient LinkedList<NeuralNetwork> remainingNetsInGeneration;
     private transient HashMap<NeuralNetwork, Double> calculatedFitnesses;
@@ -31,22 +33,22 @@ public class Simulation extends Observable implements Observer, Serializable {
 
         boolean[][] bricks = gameStats.getBricks();
 
-        ArrayList<Neuron> inputOutputNeurons = new ArrayList<Neuron>();
+        mandatoryNeurons = new ArrayList<Neuron>();
 
         for (int i = 0; i < bricks.length; i++) {
             for (int j = 0; j < bricks[i].length; j++) {
-                inputOutputNeurons.add(new BrickInputNeuron(i, j));
+                mandatoryNeurons.add(new BrickInputNeuron(i, j));
             }
         }
 
-        inputOutputNeurons.add(new Neuron(Neuron.Neuron_Type.SENSOR_PADDLE));
-        inputOutputNeurons.add(new Neuron(Neuron.Neuron_Type.SENSOR_BALL));
+        mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.SENSOR_PADDLE));
+        mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.SENSOR_BALL));
 
-        inputOutputNeurons.add(new Neuron(Neuron.Neuron_Type.OUTPUT_LEFT));
-        inputOutputNeurons.add(new Neuron(Neuron.Neuron_Type.OUTPUT_RIGHT));
+        mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.OUTPUT_LEFT));
+        mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.OUTPUT_RIGHT));
 
 
-        p.initializePopulation(inputOutputNeurons);
+        p.initializePopulation(mandatoryNeurons);
         //enterDebugData();
 
         putGenerationIntoQueue();
@@ -148,7 +150,25 @@ public class Simulation extends Observable implements Observer, Serializable {
         getNewCurrentNetwork();
     }
 
+    public void resetGeneration() {
+        resetGenomes();
+        putGenerationIntoQueue();
+    }
+
+    public void resetPopulation() {
+        p = new Population();
+        p.initializePopulation(mandatoryNeurons);
+        putGenerationIntoQueue();
+    }
+
+    private void resetGenomes() {
+        for (Genome g : p.getGenomes()) {
+            g.reset();
+        }
+    }
+
     private void putGenerationIntoQueue() {
+        remainingNetsInGeneration.clear();
         calculatedFitnesses.clear();
 
         for (Genome g : p.getGenomes()) {

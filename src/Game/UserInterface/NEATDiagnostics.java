@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
+import java.net.URL;
 import java.util.GregorianCalendar;
 import java.util.Observable;
 import java.util.Observer;
@@ -50,6 +51,11 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private JComboBox networkDetailComboBox;
     private JButton networkDetaiLoadCurrent;
     private JButton networkDetailLoadID;
+    private JToolBar toolBar;
+    private JButton playButton;
+    private JButton pauseButton;
+    private JButton newPopulationButton;
+    private JButton restartGenerationButton;
     private JFileChooser fileChooser;
     private DefaultComboBoxModel comboModel;
     private MyTableModel tableModel;
@@ -169,9 +175,16 @@ public class NEATDiagnostics extends JFrame implements Observer {
             }
         });
 
+        addButtonActionListeners();
+
+        gameStats.pauseGame();
+        pauseButton.setEnabled(false);
+        playButton.setEnabled(true);
+
         setContentPane(mainPane);
         mainPane.setPreferredSize(new Dimension(960, 480));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
         pack();
 
         fillTable();
@@ -182,6 +195,57 @@ public class NEATDiagnostics extends JFrame implements Observer {
 
         validate();
         setVisible(true);
+    }
+
+    private void addButtonActionListeners() {
+        playButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (gameStats.isGamePaused()) {
+                    gameStats.unPauseGame();
+                    playButton.setEnabled(false);
+                    pauseButton.setEnabled(true);
+                }
+            }
+        });
+
+        pauseButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!gameStats.isGamePaused()) {
+                    gameStats.pauseGame();
+                    playButton.setEnabled(true);
+                    pauseButton.setEnabled(false);
+                }
+            }
+        });
+
+        restartGenerationButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                gameStats.resetGame();
+                gameStats.pauseGame();
+                playButton.setEnabled(true);
+                pauseButton.setEnabled(false);
+
+                simulation.resetGeneration();
+
+                updateUIComponents();
+            }
+        });
+
+        newPopulationButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                gameStats.resetGame();
+                gameStats.pauseGame();
+                playButton.setEnabled(true);
+                pauseButton.setEnabled(false);
+                simulation.resetPopulation();
+                population = simulation.getPopulation();
+                updateUIComponents();
+            }
+        });
     }
 
 
@@ -201,6 +265,11 @@ public class NEATDiagnostics extends JFrame implements Observer {
         comboModel = new DefaultComboBoxModel(vec);
 
         networkDetailComboBox = new JComboBox(comboModel);
+
+        mainPane = new JPanel();
+
+        toolBar = new JToolBar();
+        mainPane.add(toolBar);
     }
 
     @Override
@@ -348,9 +417,9 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private void $$$setupUI$$$() {
         createUIComponents();
         mainPane = new JPanel();
-        mainPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 2, new Insets(10, 10, 10, 10), -1, -1));
+        mainPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(10, 10, 10, 10), -1, -1));
         NetworkPopulationTabbedPane = new JTabbedPane();
-        mainPane.add(NetworkPopulationTabbedPane, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(200, 200), null, 0, false));
+        mainPane.add(NetworkPopulationTabbedPane, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(200, 200), null, 0, false));
         PopulationPane = new JPanel();
         PopulationPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), 5, 5, true, false));
         NetworkPopulationTabbedPane.addTab("Population", PopulationPane);
@@ -493,6 +562,29 @@ public class NEATDiagnostics extends JFrame implements Observer {
         final JPanel panel7 = new JPanel();
         panel7.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
         NetworkPopulationTabbedPane.addTab("Statistics", panel7);
+        toolBar = new JToolBar();
+        toolBar.setFloatable(false);
+        mainPane.add(toolBar, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, 20), null, 0, false));
+        playButton = new JButton();
+        playButton.setIcon(new ImageIcon(getClass().getResource("/Game/UserInterface/Icons/play24x24.png")));
+        playButton.setText("");
+        playButton.setToolTipText("Start/Resume simulation");
+        toolBar.add(playButton);
+        pauseButton = new JButton();
+        pauseButton.setIcon(new ImageIcon(getClass().getResource("/Game/UserInterface/Icons/pause24x24.png")));
+        pauseButton.setText("");
+        pauseButton.setToolTipText("Pause simulation");
+        toolBar.add(pauseButton);
+        restartGenerationButton = new JButton();
+        restartGenerationButton.setIcon(new ImageIcon(getClass().getResource("/Game/UserInterface/Icons/restart24x24.png")));
+        restartGenerationButton.setText("");
+        restartGenerationButton.setToolTipText("Restart simulation for current generation");
+        toolBar.add(restartGenerationButton);
+        newPopulationButton = new JButton();
+        newPopulationButton.setIcon(new ImageIcon(getClass().getResource("/Game/UserInterface/Icons/new24x24.png")));
+        newPopulationButton.setText("");
+        newPopulationButton.setToolTipText("Start with new population");
+        toolBar.add(newPopulationButton);
     }
 
     /**

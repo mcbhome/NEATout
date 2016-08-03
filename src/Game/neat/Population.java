@@ -8,8 +8,8 @@ import java.util.*;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Population implements Serializable {
-    private static int gen_count = 0;
-    private static int conn_count = 0;
+    private int gen_count = 0;
+    private int conn_count = 0;
 
     private static final int POPULATION_SIZE = 6;
     private static final int POPULATION_DENOMINATOR = 3;
@@ -51,6 +51,10 @@ public class Population implements Serializable {
         species = new ArrayList<Species>();
         innovationNumbers = new HashMap<Integer, HashMap<Integer, Integer>>();
         this.random = new Random();
+
+        Neuron.resetNeuronCount();
+        Genome.resetGenomeCount();
+        Species.resetSpeciesCount();
     }
 
     public void initializePopulation(ArrayList<Neuron> inputOutputNeurons) {

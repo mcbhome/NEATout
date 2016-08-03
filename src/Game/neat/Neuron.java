@@ -136,4 +136,8 @@ public class Neuron implements Serializable {
 
         return this;
     }
+
+    public static void resetNeuronCount() {
+        num_neurons = 0;
+    }
 }

@@ -37,6 +37,15 @@ public class Genome implements Serializable {
 
     }
 
+    public void reset() {
+        for (Neuron n : nodeGenes) {
+            n.reset();
+        }
+
+        this.fitness = 0;
+        this.sharedFitness = 0;
+    }
+
     private Object readResolve() throws ObjectStreamException {
         this.fitness = 0;
         this.sharedFitness = 0;
@@ -349,5 +358,9 @@ public class Genome implements Serializable {
 
     public int getGenomeCountWithoutBrickNeurons() {
         return nodeGenes.size() - brickInputs.length * brickInputs[0].length + connectionGenes.size();
+    }
+
+    public static void resetGenomeCount() {
+        numGenomes = 0;
     }
 }
