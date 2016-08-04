@@ -36,7 +36,6 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private JLabel currentNetLabelId;
     private JLabel networkDetailIDLabel;
     private JLabel networkDetailConnectionCountLabel;
-    private JPanel networkDetailInputPanel;
     private JLabel networkDetailHiddenNodeCount;
     private JLabel networkDetailLayerCount;
     private JLabel networkDetailBallInput;
@@ -62,6 +61,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private GameStats gameStats;
     private Genome curDetailGenome;
     private boolean showCurrent;
+    private int generationSaveMod = 0;
     private String[] networkTableColumnNames = {"ID", "SpeciesID", "# Nodes", "#Connections (#Active)", "Fitness", "SharedFitness"};
     private String[] historyTableColumnNames = {"Gen. ID", "Average Fitness", "Top Fitness"};
 
@@ -117,6 +117,66 @@ public class NEATDiagnostics extends JFrame implements Observer {
             }
         });
 
+        file.add(item);
+
+        item = new JMenu("Autosave every...");
+
+        ButtonGroup group = new ButtonGroup();
+        JRadioButtonMenuItem rbItem = new JRadioButtonMenuItem("Off");
+        rbItem.setSelected(true);
+        rbItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                generationSaveMod = 0;
+            }
+        });
+        group.add(rbItem);
+        item.add(rbItem);
+        rbItem = new JRadioButtonMenuItem("5 Generations");
+        rbItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                generationSaveMod = 5;
+            }
+        });
+        group.add(rbItem);
+        item.add(rbItem);
+        rbItem = new JRadioButtonMenuItem("10 Generations");
+        rbItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                generationSaveMod = 10;
+            }
+        });
+        group.add(rbItem);
+        item.add(rbItem);
+        rbItem = new JRadioButtonMenuItem("20 Generations");
+        rbItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                generationSaveMod = 20;
+            }
+        });
+        group.add(rbItem);
+        item.add(rbItem);
+        rbItem = new JRadioButtonMenuItem("50 Generations");
+        rbItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                generationSaveMod = 50;
+            }
+        });
+        group.add(rbItem);
+        item.add(rbItem);
+        rbItem = new JRadioButtonMenuItem("100 Generations");
+        rbItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                generationSaveMod = 100;
+            }
+        });
+        group.add(rbItem);
+        item.add(rbItem);
         file.add(item);
 
         item = new JMenuItem("Load population from file...");
@@ -294,6 +354,14 @@ public class NEATDiagnostics extends JFrame implements Observer {
                 if (showCurrent) {
                     curDetailGenome = simulation.getCurrent().getGenome();
                 }
+
+                if (generationSaveMod != 0 && simulation.getPopulation().getGenerationId() % generationSaveMod == 0) {
+                    try {
+                        serializeSim();
+                    } catch (IOException e) {
+                        System.out.println("IOException during serialization occured");
+                    }
+                }
             } else if (argtype == Simulation.Update_Args.PLAYER_DIED) {
                 if (showCurrent) {
                     curDetailGenome = simulation.getCurrent().getGenome();
@@ -394,11 +462,11 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private void serializeSim() throws IOException {
         GregorianCalendar cal = new GregorianCalendar();
         String fileName = "simulation_gen" + simulation.getPopulation().getGenerationId() +
-                "_" + cal.get(GregorianCalendar.DAY_OF_MONTH) +
-                "-" + cal.get(GregorianCalendar.MONTH) +
-                "-" + cal.get(GregorianCalendar.YEAR) +
-                "_" + cal.get(GregorianCalendar.MINUTE) +
-                "-" + cal.get(GregorianCalendar.HOUR_OF_DAY) +
+                "_" + String.format("%02d", cal.get(GregorianCalendar.DAY_OF_MONTH)) +
+                "-" + String.format("%02d", cal.get(GregorianCalendar.MONTH)) +
+                "-" + String.format("%04d", cal.get(GregorianCalendar.YEAR)) +
+                "_" + String.format("%02d", cal.get(GregorianCalendar.HOUR_OF_DAY)) +
+                "-" + String.format("%02d", cal.get(GregorianCalendar.MINUTE)) +
                 ".ser";
 
         File f = new File("./" + fileName);

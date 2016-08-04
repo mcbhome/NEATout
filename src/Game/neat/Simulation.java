@@ -13,8 +13,8 @@ public class Simulation extends Observable implements Observer, Serializable {
     public enum Update_Args {PLAYER_DIED, BRICK_CHANGE, SCORE_CHANGED, MOVEMENT, MISC, NEW_GAME, NEW_GENERATION}
     public static final String TOP_FITNESS_KEY = "TOP_FITNESS";
     public static final String AVERAGE_FITNESS_KEY = "AVERAGE_FITNESS";
-    private static final double SCORE_FACTOR = 1.0;
-    private static final double SHOTS_FACTOR = -10.0;
+    private static final double SCORE_FACTOR = 0.01;
+    private static final double SHOTS_FACTOR = 10.0;
 
     private static final double MAXIMUM_SPEED_FACTOR = 3;
 
@@ -135,7 +135,7 @@ public class Simulation extends Observable implements Observer, Serializable {
     }
 
     public double calculateCurrentFitness() {
-        return gameStats.getScore() * SCORE_FACTOR - gameStats.getShots() * SHOTS_FACTOR;
+        return gameStats.getScore() * SCORE_FACTOR + gameStats.getShots() * SHOTS_FACTOR;
     }
 
     public void initBrickInputsForCurrentNetwork() {
