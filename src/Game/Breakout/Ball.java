@@ -9,10 +9,10 @@ public class Ball
 {
     private int radius;
     //center of ball
-    private int x;
+    private double x;
     private int yTop;
     private int verticalSpeed;
-    private int horizontalSpeed;
+    private double horizontalSpeed;
     private boolean goingDown;
     private int diameter;
 
@@ -83,7 +83,7 @@ public class Ball
      *
      * @param speed
      */
-    public void setHorizontalSpeed(int speed)
+    public void setHorizontalSpeed(double speed)
     {
         horizontalSpeed = speed;
     }
@@ -93,7 +93,7 @@ public class Ball
         return radius;
     }
 
-    public int getX()
+    public double getX()
     {
         return x;
     }

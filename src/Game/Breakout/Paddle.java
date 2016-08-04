@@ -11,10 +11,10 @@ public class Paddle
         LEFT, RIGHT
     }
 
-    private int xLeft;
+    private double xLeft;
     private int pWidth;
     private int pHeight;
-    private int dx;
+    private double dx;
 
     public Paddle(int x, int y)
     {
@@ -23,7 +23,7 @@ public class Paddle
         pWidth = 60;
     }
 
-    public int getXLeft()
+    public double getXLeft()
     {
         return xLeft;
     }
@@ -55,7 +55,7 @@ public class Paddle
     public Rectangle paddleAsRect()
     {
         Rectangle paddle
-            = new Rectangle(xLeft, pHeight, pWidth, 3);
+            = new Rectangle((int)xLeft, pHeight, pWidth, 3);
 
         return paddle;
     }
@@ -71,21 +71,21 @@ public class Paddle
 
         if (key == KeyEvent.VK_LEFT)
         {
-            changeDir(Direction.LEFT, 1);
+            changeDir(Direction.LEFT, 1.5);
         }
 
         if (key == KeyEvent.VK_RIGHT)
         {
-            changeDir(Direction.RIGHT, 1);
+            changeDir(Direction.RIGHT, 1.5);
 
         }
     }
 
     public void changeDir(Direction dir, double speed) {
         if (dir == Direction.LEFT) {
-            dx = (int) (-2 * speed);
+            dx = -2 * speed;
         } else if (dir == Direction.RIGHT) {
-            dx = (int) (2 * speed);
+            dx = 2 * speed;
         }
     }
 

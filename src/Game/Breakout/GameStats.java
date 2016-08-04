@@ -13,6 +13,8 @@ public class GameStats extends Observable {
     private static final int START_LIVES = 1;
     private static final int POINTS_PER_BRICK = 100;
 
+    public static final double MAX_BALL_SPEED = 3;
+
     boolean gameStarted;
     boolean[][] bricks;
     Paddle paddle;

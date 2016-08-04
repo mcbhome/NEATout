@@ -18,6 +18,7 @@ public class Genome implements Serializable {
     private Neuron ballInput;
     private Neuron leftOutput;
     private Neuron rightOutput;
+    private Neuron biasNeuron;
     private ArrayList<Connection> connectionGenes;
     private transient double fitness;
     private transient double sharedFitness;
@@ -144,6 +145,8 @@ public class Genome implements Serializable {
 
         if (innov > highestInnov)
             highestInnov = innov;
+
+        calculateDepths();
     }
 
     public int getHighestInnov() {
@@ -220,6 +223,8 @@ public class Genome implements Serializable {
             if (n.getType() == Neuron.Neuron_Type.SENSOR_BRICK) {
                 BrickInputNeuron brick = (BrickInputNeuron) n;
                 this.brickInputs[brick.getI()][brick.getJ()] = brick;
+            } else if (n.getType() == Neuron.Neuron_Type.BIAS) {
+                this.biasNeuron = n;
             } else if (n.getType() == Neuron.Neuron_Type.SENSOR_PADDLE) {
                 this.paddleInput = n;
             } else if (n.getType() == Neuron.Neuron_Type.SENSOR_BALL) {
@@ -325,31 +330,39 @@ public class Genome implements Serializable {
 
         while (!curQueue.isEmpty()) {
             while (!curQueue.isEmpty()) {
-                ArrayList<Connection> successors = curQueue.poll().getSuccessors();
+                Neuron n = curQueue.poll();
+
+                if (n.isInputNeuron())
+                    curDepth = 1;
+
+                ArrayList<Connection> successors = n.getSuccessors();
 
                 for (Connection c : successors) {
                     Neuron cur = c.getOut();
-                    if (cur.getDepth() < curDepth) {
+                    if (!nextQueue.contains(cur)) {
                         nextQueue.add(cur);
+                    }
+                    if (cur.getDepth() < curDepth || cur.getDepth() == Integer.MAX_VALUE) {
                         cur.setDepth(curDepth);
                     }
                 }
             }
+
             curDepth++;
             curQueue = nextQueue;
             nextQueue = new LinkedList<Neuron>();
         }
 
-        if (rightOutput.getDepth() > leftOutput.getDepth()) {
+        if (rightOutput.getDepth() != Integer.MAX_VALUE && rightOutput.getDepth() > leftOutput.getDepth()) {
             leftOutput.setDepth(rightOutput.getDepth());
-        } else if (leftOutput.getDepth() > rightOutput.getDepth()) {
+        } else if (leftOutput.getDepth() != Integer.MAX_VALUE && leftOutput.getDepth() > rightOutput.getDepth()) {
             rightOutput.setDepth(leftOutput.getDepth());
         } else if (leftOutput.getDepth() == 0 && rightOutput.getDepth() == 0) {
             leftOutput.setDepth(Integer.MAX_VALUE);
             rightOutput.setDepth(Integer.MAX_VALUE);
         }
 
-        layers = curDepth;
+        layers = curDepth - 1;
     }
 
     public int getLayers() {

@@ -11,6 +11,8 @@ import java.util.*;
  */
 public class Simulation extends Observable implements Observer, Serializable {
     public enum Update_Args {PLAYER_DIED, BRICK_CHANGE, SCORE_CHANGED, MOVEMENT, MISC, NEW_GAME, NEW_GENERATION}
+    public static final String TOP_FITNESS_KEY = "TOP_FITNESS";
+    public static final String AVERAGE_FITNESS_KEY = "AVERAGE_FITNESS";
     private static final double SCORE_FACTOR = 1.0;
     private static final double SHOTS_FACTOR = -10.0;
 
@@ -21,6 +23,8 @@ public class Simulation extends Observable implements Observer, Serializable {
 
     private ArrayList<Neuron> mandatoryNeurons;
 
+    private TreeMap<Integer, HashMap<String, Double>> historyMap;
+
     private transient GameStats gameStats;
     private transient LinkedList<NeuralNetwork> remainingNetsInGeneration;
     private transient HashMap<NeuralNetwork, Double> calculatedFitnesses;
@@ -30,6 +34,7 @@ public class Simulation extends Observable implements Observer, Serializable {
         p = new Population();
         remainingNetsInGeneration = new LinkedList<NeuralNetwork>();
         calculatedFitnesses = new HashMap<NeuralNetwork, Double>();
+        historyMap = new TreeMap<Integer, HashMap<String, Double>>();
 
         boolean[][] bricks = gameStats.getBricks();
 
@@ -47,6 +52,8 @@ public class Simulation extends Observable implements Observer, Serializable {
         mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.OUTPUT_LEFT));
         mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.OUTPUT_RIGHT));
 
+        mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.BIAS));
+
 
         p.initializePopulation(mandatoryNeurons);
         //enterDebugData();
@@ -61,10 +68,7 @@ public class Simulation extends Observable implements Observer, Serializable {
             Neuron n = new Neuron(Neuron.Neuron_Type.HIDDEN);
             Neuron m = new Neuron(Neuron.Neuron_Type.HIDDEN);
 
-            //g.addConnectionGene(new Connection(g.getBrickInputNeurons()[0][0], n, 1, 5, g));
-            //g.addConnectionGene(new Connection(n, g.getRightOutputNeuron(), 2, 0.5, g));
-            g.addFromExistingConnection(new Connection(g.getBrickInputNeurons()[0][0], g.getLeftOutputNeuron(), 1, 10, g));
-            g.addFromExistingConnection(new Connection(g.getBrickInputNeurons()[0][6], g.getRightOutputNeuron(), 2, 10, g));
+            g.addFromExistingConnection(new Connection(g.getBrickInputNeurons()[0][0], g.getLeftOutputNeuron(), 1, 1, g));
         }
     }
 
@@ -91,6 +95,7 @@ public class Simulation extends Observable implements Observer, Serializable {
         } else if (type == Update_Args.MOVEMENT) {
             current.setPaddlePosition(gameStats.getPaddle().getXLeft());
             current.setBallPosition(gameStats.getBall().getX());
+            current.setBallPosition(gameStats.getBall().getX());
 
             calculateOutputAndMovePaddle();
         }
@@ -101,7 +106,27 @@ public class Simulation extends Observable implements Observer, Serializable {
 
         if (current == null) {
             current = null;
+            HashMap<String, Double> currentStatistics = historyMap.get(p.getGenerationId());
+
+            if (currentStatistics == null) {
+                currentStatistics = new HashMap<String, Double>();
+                historyMap.put(p.getGenerationId(), currentStatistics);
+            }
+
+            currentStatistics.put(TOP_FITNESS_KEY, p.getTopFitness());
+
+            double totalFitness = 0;
+
+            for (Genome g : p.getGenomes()) {
+                totalFitness += g.getFitness();
+            }
+
+            double averageFitness = totalFitness / p.getGenomes().size();
+
+            currentStatistics.put(AVERAGE_FITNESS_KEY, averageFitness);
+
             calculateFinalFitnessValues();
+
             p.newGeneration();
             putGenerationIntoQueue();
         }
@@ -267,5 +292,9 @@ public class Simulation extends Observable implements Observer, Serializable {
     private void properlyNotify(Update_Args type) {
         setChanged();
         notifyObservers(type);
+    }
+
+    public TreeMap<Integer, HashMap<String, Double>> getHistoryMap() {
+        return historyMap;
     }
 }

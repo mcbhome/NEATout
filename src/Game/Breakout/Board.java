@@ -23,7 +23,7 @@ public class Board extends JPanel
     private GameStats gameStats;
     private Commons commons;
     private boolean simulationMode;
-    private String bg = "res/landingScreen.jpg";
+    private String bg = "../res/landingScreen.jpg";
 
 
     /**
@@ -525,31 +525,18 @@ public class Board extends JPanel
      */
     public void adjustBallSpeedRelativeToPaddleIntersection()
     {
-        Ellipse2D.Double ballShape = gameStats.getBall().ballAsEllipse();
-        Rectangle paddleRect = gameStats.getPaddle().paddleAsRect();
-        // Split paddle in four parts thus allowing player to control
-        // direction of the ball
+        double pLeft = gameStats.getPaddle().getXLeft();
+        double bLeft = gameStats.getBall().getX();
 
-        // Get leftmost position of paddle and ball
-        float pLeft = gameStats.getPaddle().getXLeft();
-        float bLeft = gameStats.getBall().getX();
+        double newSpeed = -3 + ((bLeft - pLeft) / commons.getPWidth()) * gameStats.MAX_BALL_SPEED * 2;
 
-        if (bLeft > pLeft + (0.75*commons.getPWidth()))
-        {
-            gameStats.getBall().setHorizontalSpeed(2);
+
+        // if we're in the middle, get random speed
+        if (bLeft - (pLeft + commons.getPWidth() * 0.5) < 0.1 && bLeft - (pLeft + commons.getPWidth() * 0.5) > -0.1) {
+            newSpeed = Math.random() * 4 - 2;
         }
-        else if (bLeft > pLeft + (0.5*commons.getPWidth()))
-        {
-            gameStats.getBall().setHorizontalSpeed(1);
-        }
-        else if (bLeft > pLeft + (0.25*commons.getPWidth()))
-        {
-            gameStats.getBall().setHorizontalSpeed(-1);
-        }
-        else
-        {
-            gameStats.getBall().setHorizontalSpeed(-2);
-        }
+
+        gameStats.getBall().setHorizontalSpeed(newSpeed);
 
     }
 

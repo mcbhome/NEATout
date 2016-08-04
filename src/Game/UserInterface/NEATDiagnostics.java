@@ -2,8 +2,6 @@ package Game.UserInterface;
 
 import Game.Breakout.GameStats;
 import Game.neat.*;
-import javafx.stage.FileChooser;
-import sun.util.calendar.Gregorian;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -11,11 +9,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
-import java.net.URL;
-import java.util.GregorianCalendar;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.Vector;
+import java.text.NumberFormat;
+import java.util.*;
 
 /**
  * Created by qfi_2 on 27.07.2016.
@@ -23,9 +18,9 @@ import java.util.Vector;
 public class NEATDiagnostics extends JFrame implements Observer {
 
     private static final String TO_BE_DETERMINED = "TBD";
-    private JTabbedPane NetworkPopulationTabbedPane;
-    private JPanel PopulationPane;
-    private JPanel NetworkDetailPane;
+    private JTabbedPane networkPopulationTabbedPane;
+    private JPanel populationPane;
+    private JPanel networkDetailPane;
     private JLabel networkCountTextLabel;
     private JLabel generationCountTextLabel;
     private JLabel maxFitnessTextLabel;
@@ -56,15 +51,19 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private JButton pauseButton;
     private JButton newPopulationButton;
     private JButton restartGenerationButton;
+    private JPanel statisticsPane;
+    private JTable statisticsTable;
     private JFileChooser fileChooser;
     private DefaultComboBoxModel comboModel;
-    private MyTableModel tableModel;
+    private DefaultTableModel currentPopulationTableModel;
+    private DefaultTableModel statisticsTableModel;
     private Simulation simulation;
     private Population population;
     private GameStats gameStats;
     private Genome curDetailGenome;
     private boolean showCurrent;
     private String[] networkTableColumnNames = {"ID", "SpeciesID", "# Nodes", "#Connections (#Active)", "Fitness", "SharedFitness"};
+    private String[] historyTableColumnNames = {"Gen. ID", "Average Fitness", "Top Fitness"};
 
     public NEATDiagnostics() {
         super("NEAT Diagnostics");
@@ -148,7 +147,6 @@ public class NEATDiagnostics extends JFrame implements Observer {
         file.add(item);
         menubar.add(file);
         setJMenuBar(menubar);
-
         setResizable(false);
         $$$setupUI$$$();
 
@@ -187,7 +185,8 @@ public class NEATDiagnostics extends JFrame implements Observer {
 
         pack();
 
-        fillTable();
+
+        fillTables();
         updateLabels();
 
         gameStats.addObserver(this);
@@ -251,11 +250,22 @@ public class NEATDiagnostics extends JFrame implements Observer {
 
     private void createUIComponents() {
         // TODO: place custom component creation code here
-        tableModel = new MyTableModel(0, networkTableColumnNames.length);
-        tableModel.setColumnIdentifiers(networkTableColumnNames);
+        currentPopulationTableModel = new DefaultTableModel(0, networkTableColumnNames.length);
+        currentPopulationTableModel.setColumnIdentifiers(networkTableColumnNames);
 
-        networkTable = new JTable(tableModel);
-        networkTable.setVisible(true);
+        networkTable = new JTable(currentPopulationTableModel);
+        networkTable.setAutoCreateRowSorter(true);
+        //networkTable.setVisible(true);
+
+        statisticsTableModel = new DefaultTableModel(0, historyTableColumnNames.length);
+        statisticsTableModel.setColumnIdentifiers(historyTableColumnNames);
+
+        statisticsTable = new JTable(statisticsTableModel);
+        statisticsTable.setAutoCreateRowSorter(true);
+        DefaultRowSorter sorter = (DefaultRowSorter) statisticsTable.getRowSorter();
+        ArrayList<RowSorter.SortKey> keys = new ArrayList<RowSorter.SortKey>();
+        keys.add(new RowSorter.SortKey(0, SortOrder.DESCENDING));
+        sorter.setSortKeys(keys);
 
         Vector<String> vec = new Vector<String>();
         for (Genome g : simulation.getPopulation().getGenomes()) {
@@ -270,6 +280,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
 
         toolBar = new JToolBar();
         mainPane.add(toolBar);
+
     }
 
     @Override
@@ -278,7 +289,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
             Simulation.Update_Args argtype = (Simulation.Update_Args) arg;
 
             if (argtype == Simulation.Update_Args.NEW_GENERATION) {
-                fillTable();
+                fillTables();
                 updateComboBox();
                 if (showCurrent) {
                     curDetailGenome = simulation.getCurrent().getGenome();
@@ -296,7 +307,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private void updateUIComponents() {
         this.updateLabels();
         this.updateComboBox();
-        this.fillTable();
+        this.fillTables();
     }
 
     private void updateComboBox() {
@@ -348,15 +359,35 @@ public class NEATDiagnostics extends JFrame implements Observer {
         }
     }
 
-    public void fillTable() {
-        for (int i = tableModel.getRowCount(); i > 0; i--) {
-            tableModel.removeRow(0);
+    public void fillTables() {
+        NumberFormat nf = NumberFormat.getInstance(Locale.US);
+        nf.setMaximumFractionDigits(2);
+        nf.setMinimumFractionDigits(2);
+
+        for (int i = currentPopulationTableModel.getRowCount(); i > 0; i--) {
+            currentPopulationTableModel.removeRow(0);
         }
 
         for (Species s : population.getSpecies()) {
             for (Genome g : s.getGenomes()) {
-                tableModel.addRow(new String[]{"" + g.getId(), "" + s.getId(), "" + g.getNodeGenes().size(), "" + g.getConnectionGenes().size() + " (" + g.getActiveConnectionCount() + ")", "" + String.format("%.2f", g.getFitness()), "" + String.format("%.2f", g.getSharedFitness())});
+
+                currentPopulationTableModel.addRow(new String[]{"" + g.getId(), "" + s.getId(), "" + g.getNodeGenes().size(), "" + g.getConnectionGenes().size() + " (" + g.getActiveConnectionCount() + ")", "" + nf.format(g.getFitness()), "" + nf.format(g.getSharedFitness())});
             }
+        }
+
+        for (int i = statisticsTableModel.getRowCount(); i > 0; i--) {
+            statisticsTableModel.removeRow(0);
+        }
+
+        TreeMap<Integer, HashMap<String, Double>> history = simulation.getHistoryMap();
+
+        DefaultRowSorter sorter = (DefaultRowSorter) statisticsTable.getRowSorter();
+
+        for (Integer i : history.keySet()) {
+            HashMap<String, Double> values = history.get(i);
+
+            statisticsTableModel.addRow(new String[]{"" + i, nf.format(values.get(Simulation.AVERAGE_FITNESS_KEY)), nf.format(values.get(Simulation.TOP_FITNESS_KEY))});
+            sorter.sort();
         }
     }
 
@@ -418,14 +449,14 @@ public class NEATDiagnostics extends JFrame implements Observer {
         createUIComponents();
         mainPane = new JPanel();
         mainPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(10, 10, 10, 10), -1, -1));
-        NetworkPopulationTabbedPane = new JTabbedPane();
-        mainPane.add(NetworkPopulationTabbedPane, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(200, 200), null, 0, false));
-        PopulationPane = new JPanel();
-        PopulationPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), 5, 5, true, false));
-        NetworkPopulationTabbedPane.addTab("Population", PopulationPane);
+        networkPopulationTabbedPane = new JTabbedPane();
+        mainPane.add(networkPopulationTabbedPane, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(200, 200), null, 0, false));
+        populationPane = new JPanel();
+        populationPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), 5, 5, true, false));
+        networkPopulationTabbedPane.addTab("Population", populationPane);
         final JPanel panel1 = new JPanel();
         panel1.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(4, 2, new Insets(5, 5, 5, 5), -1, -1));
-        PopulationPane.add(panel1, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        populationPane.add(panel1, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         panel1.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "General Info"));
         networkCountLabel = new JLabel();
         networkCountLabel.setText("Label");
@@ -453,11 +484,11 @@ public class NEATDiagnostics extends JFrame implements Observer {
         panel1.add(currentNetLabelId, new com.intellij.uiDesigner.core.GridConstraints(3, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JScrollPane scrollPane1 = new JScrollPane();
         scrollPane1.setVerticalScrollBarPolicy(22);
-        PopulationPane.add(scrollPane1, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(376, 419), null, 0, false));
+        populationPane.add(scrollPane1, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(376, 419), null, 0, false));
         scrollPane1.setViewportView(networkTable);
         final JPanel panel2 = new JPanel();
         panel2.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(4, 2, new Insets(0, 0, 0, 0), -1, -1));
-        PopulationPane.add(panel2, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        populationPane.add(panel2, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         panel2.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Current Game Stats"));
         final JLabel label2 = new JLabel();
         label2.setText("Score");
@@ -483,12 +514,12 @@ public class NEATDiagnostics extends JFrame implements Observer {
         shotsLabel = new JLabel();
         shotsLabel.setText("Label");
         panel2.add(shotsLabel, new com.intellij.uiDesigner.core.GridConstraints(3, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        NetworkDetailPane = new JPanel();
-        NetworkDetailPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 4, new Insets(10, 10, 10, 10), -1, -1));
-        NetworkPopulationTabbedPane.addTab("Network Detail", NetworkDetailPane);
+        networkDetailPane = new JPanel();
+        networkDetailPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 4, new Insets(10, 10, 10, 10), -1, -1));
+        networkPopulationTabbedPane.addTab("Network Detail", networkDetailPane);
         final JPanel panel3 = new JPanel();
         panel3.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(4, 2, new Insets(10, 10, 10, 10), -1, -1));
-        NetworkDetailPane.add(panel3, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        networkDetailPane.add(panel3, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         panel3.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "General"));
         final JLabel label6 = new JLabel();
         label6.setText("ID:");
@@ -516,7 +547,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
         panel3.add(networkDetailLayerCount, new com.intellij.uiDesigner.core.GridConstraints(3, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel4 = new JPanel();
         panel4.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
-        NetworkDetailPane.add(panel4, new com.intellij.uiDesigner.core.GridConstraints(1, 2, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        networkDetailPane.add(panel4, new com.intellij.uiDesigner.core.GridConstraints(1, 2, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
         panel5.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(10, 10, 10, 10), -1, -1));
         panel4.add(panel5, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
@@ -551,37 +582,40 @@ public class NEATDiagnostics extends JFrame implements Observer {
         panel6.add(networkDetailRightOutput, new com.intellij.uiDesigner.core.GridConstraints(1, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JLabel label14 = new JLabel();
         label14.setText("Network");
-        NetworkDetailPane.add(label14, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        NetworkDetailPane.add(networkDetailComboBox, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        networkDetailPane.add(label14, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        networkDetailPane.add(networkDetailComboBox, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         networkDetaiLoadCurrent = new JButton();
         networkDetaiLoadCurrent.setText("Load Current");
-        NetworkDetailPane.add(networkDetaiLoadCurrent, new com.intellij.uiDesigner.core.GridConstraints(0, 3, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        networkDetailPane.add(networkDetaiLoadCurrent, new com.intellij.uiDesigner.core.GridConstraints(0, 3, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         networkDetailLoadID = new JButton();
         networkDetailLoadID.setText("Load");
-        NetworkDetailPane.add(networkDetailLoadID, new com.intellij.uiDesigner.core.GridConstraints(0, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JPanel panel7 = new JPanel();
-        panel7.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        NetworkPopulationTabbedPane.addTab("Statistics", panel7);
+        networkDetailPane.add(networkDetailLoadID, new com.intellij.uiDesigner.core.GridConstraints(0, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        statisticsPane = new JPanel();
+        statisticsPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+        networkPopulationTabbedPane.addTab("Statistics", statisticsPane);
+        final JScrollPane scrollPane2 = new JScrollPane();
+        statisticsPane.add(scrollPane2, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        scrollPane2.setViewportView(statisticsTable);
         toolBar = new JToolBar();
         toolBar.setFloatable(false);
         mainPane.add(toolBar, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, 20), null, 0, false));
         playButton = new JButton();
-        playButton.setIcon(new ImageIcon(getClass().getResource("/Game/UserInterface/Icons/play24x24.png")));
+        playButton.setIcon(new ImageIcon(getClass().getResource("/Game/res/play24x24.png")));
         playButton.setText("");
         playButton.setToolTipText("Start/Resume simulation");
         toolBar.add(playButton);
         pauseButton = new JButton();
-        pauseButton.setIcon(new ImageIcon(getClass().getResource("/Game/UserInterface/Icons/pause24x24.png")));
+        pauseButton.setIcon(new ImageIcon(getClass().getResource("/Game/res/pause24x24.png")));
         pauseButton.setText("");
         pauseButton.setToolTipText("Pause simulation");
         toolBar.add(pauseButton);
         restartGenerationButton = new JButton();
-        restartGenerationButton.setIcon(new ImageIcon(getClass().getResource("/Game/UserInterface/Icons/restart24x24.png")));
+        restartGenerationButton.setIcon(new ImageIcon(getClass().getResource("/Game/res/restart24x24.png")));
         restartGenerationButton.setText("");
         restartGenerationButton.setToolTipText("Restart simulation for current generation");
         toolBar.add(restartGenerationButton);
         newPopulationButton = new JButton();
-        newPopulationButton.setIcon(new ImageIcon(getClass().getResource("/Game/UserInterface/Icons/new24x24.png")));
+        newPopulationButton.setIcon(new ImageIcon(getClass().getResource("/Game/res/new24x24.png")));
         newPopulationButton.setText("");
         newPopulationButton.setToolTipText("Start with new population");
         toolBar.add(newPopulationButton);
@@ -593,21 +627,4 @@ public class NEATDiagnostics extends JFrame implements Observer {
     public JComponent $$$getRootComponent$$$() {
         return mainPane;
     }
-
-    private class MyTableModel extends DefaultTableModel {
-        public MyTableModel(int rowCount, int columnCount) {
-            super(rowCount, columnCount);
-        }
-
-        public void removeRowWithNetworkID(int id) {
-            for (int i = 0; i < this.dataVector.size(); i++) {
-                Vector cur = (Vector) this.dataVector.get(i);
-
-                if (Integer.parseInt((String) cur.get(0)) == id) {
-                    this.removeRow(i);
-                }
-            }
-        }
-    }
-
 }

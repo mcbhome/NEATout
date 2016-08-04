@@ -45,11 +45,11 @@ public class NeuralNetwork implements Serializable {
         brickInputNeurons[i][j].setInput(state ? 1.0 : 0.0);
     }
 
-    public void setPaddlePosition(int x) {
+    public void setPaddlePosition(double x) {
         paddleInputNeuron.setInput(x);
     }
 
-    public void setBallPosition(int x) {
+    public void setBallPosition(double x) {
         ballInputNeuron.setInput(x);
     }
 

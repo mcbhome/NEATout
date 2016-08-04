@@ -25,12 +25,20 @@ public class Neuron implements Serializable {
         this.id = num_neurons++;
         this.type = type;
         successors = new ArrayList<Connection>();
+
+        if (this.type == Neuron_Type.BIAS) {
+            this.depth = -1;
+        }
     }
 
     public Neuron(Neuron n) {
         this.id = n.getId();
         this.type = n.getType();
         this.successors = new ArrayList<Connection>();
+
+        if (this.type == Neuron_Type.BIAS) {
+            this.depth = -1;
+        }
     }
 
     public void setInput(double in) {
@@ -49,6 +57,8 @@ public class Neuron implements Serializable {
     public void calculateOutput() {
         if (this.isInputNeuron())
             output = input;
+        else if(this.getType() == Neuron_Type.BIAS)
+            output = 1;
         else
             output = calculateSigmoid(input);
     }
