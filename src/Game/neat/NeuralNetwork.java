@@ -28,12 +28,11 @@ public class NeuralNetwork implements Serializable {
     }
 
     private void initInputDepths() {
-        for (int i = 0; i < brickInputNeurons.length; i++) {
-            for (int j = 0; j < brickInputNeurons[i].length; j++) {
-                if (brickInputNeurons[i][j] == null)
-                    System.out.println();
-
-                brickInputNeurons[i][j].setDepth(0);
+        if (genome.BRICK_INPUTS_ENABLED) {
+            for (int i = 0; i < brickInputNeurons.length; i++) {
+                for (int j = 0; j < brickInputNeurons[i].length; j++) {
+                    brickInputNeurons[i][j].setDepth(0);
+                }
             }
         }
 
@@ -42,7 +41,9 @@ public class NeuralNetwork implements Serializable {
     }
 
     public void setBrickInput(int i, int j, boolean state) {
-        brickInputNeurons[i][j].setInput(state ? 1.0 : 0.0);
+        if (genome.BRICK_INPUTS_ENABLED) {
+            brickInputNeurons[i][j].setInput(state ? 1.0 : 0.0);
+        }
     }
 
     public void setPaddlePosition(double x) {
@@ -64,9 +65,11 @@ public class NeuralNetwork implements Serializable {
     public void propagateInputs() {
         LinkedList<Neuron> neuronQueue = new LinkedList<Neuron>();
 
-        for (int i = 0; i < brickInputNeurons.length; i++) {
-            for (int j = 0; j < brickInputNeurons[i].length; j++)
-                neuronQueue.add(brickInputNeurons[i][j]);
+        if (genome.BRICK_INPUTS_ENABLED) {
+            for (int i = 0; i < brickInputNeurons.length; i++) {
+                for (int j = 0; j < brickInputNeurons[i].length; j++)
+                    neuronQueue.add(brickInputNeurons[i][j]);
+            }
         }
 
         neuronQueue.add(paddleInputNeuron);

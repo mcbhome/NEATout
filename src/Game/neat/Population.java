@@ -11,7 +11,7 @@ public class Population implements Serializable {
     private int gen_count = 0;
     private int conn_count = 0;
 
-    private static final int POPULATION_SIZE = 1;
+    private static final int POPULATION_SIZE = 30;
     private static final int POPULATION_DENOMINATOR = 3;
 
     private static final int MAXIMUM_STALENESS = 20;
@@ -19,7 +19,7 @@ public class Population implements Serializable {
     private static final double COMPATIBILITY_THRESHOLD = 3;
     private static final double C1 = 1;
     private static final double C2 = 1;
-    private static final double C3 = 1;
+    private static final double C3 = 3;
 
     private static final double MUTATION_WEIGHT_BOUND = 5;
     private static final double PERTURBATION_FACTOR_BOUND = 2;

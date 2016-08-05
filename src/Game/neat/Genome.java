@@ -11,6 +11,8 @@ import java.util.*;
 public class Genome implements Serializable {
     private static int numGenomes = 0;
 
+    public final boolean BRICK_INPUTS_ENABLED = false;
+
     private int id;
     private ArrayList<Neuron> nodeGenes;
     private BrickInputNeuron[][] brickInputs;
@@ -81,7 +83,7 @@ public class Genome implements Serializable {
     }
 
     public Neuron addFromExistingNode(Neuron n) {
-        Neuron newNode;
+        Neuron newNode = null;
 
         if (n.getType() == Neuron.Neuron_Type.SENSOR_BRICK) {
             newNode = new BrickInputNeuron((BrickInputNeuron) n);
@@ -217,23 +219,29 @@ public class Genome implements Serializable {
     }
 
     public void addNode(Neuron n) {
-        this.nodeGenes.add(n);
-
         if (!(n.getType() == Neuron.Neuron_Type.HIDDEN)) {
-            if (n.getType() == Neuron.Neuron_Type.SENSOR_BRICK) {
+            if (n.getType() == Neuron.Neuron_Type.SENSOR_BRICK && BRICK_INPUTS_ENABLED) {
                 BrickInputNeuron brick = (BrickInputNeuron) n;
                 this.brickInputs[brick.getI()][brick.getJ()] = brick;
+                this.nodeGenes.add(n);
             } else if (n.getType() == Neuron.Neuron_Type.BIAS) {
                 this.biasNeuron = n;
+                this.nodeGenes.add(n);
             } else if (n.getType() == Neuron.Neuron_Type.SENSOR_PADDLE) {
                 this.paddleInput = n;
+                this.nodeGenes.add(n);
             } else if (n.getType() == Neuron.Neuron_Type.SENSOR_BALL) {
                 this.ballInput = n;
+                this.nodeGenes.add(n);
             } else if (n.getType() == Neuron.Neuron_Type.OUTPUT_LEFT) {
                 this.leftOutput = n;
+                this.nodeGenes.add(n);
             } else if (n.getType() == Neuron.Neuron_Type.OUTPUT_RIGHT) {
                 this.rightOutput = n;
+                this.nodeGenes.add(n);
             }
+        } else {
+            this.nodeGenes.add(n);
         }
     }
 
@@ -284,9 +292,11 @@ public class Genome implements Serializable {
     public ArrayList<Neuron> getMandatoryNodes() {
         ArrayList<Neuron> res = new ArrayList<Neuron>();
 
-        for (int i = 0; i < brickInputs.length; i++) {
-            for (int j = 0; j < brickInputs[i].length; j++) {
-                res.add(brickInputs[i][j]);
+        if (BRICK_INPUTS_ENABLED) {
+            for (int i = 0; i < brickInputs.length; i++) {
+                for (int j = 0; j < brickInputs[i].length; j++) {
+                    res.add(brickInputs[i][j]);
+                }
             }
         }
 
@@ -318,9 +328,11 @@ public class Genome implements Serializable {
         LinkedList<Neuron> curQueue = new LinkedList<Neuron>();
         LinkedList<Neuron> nextQueue = new LinkedList<Neuron>();
 
-        for (int i = 0; i < brickInputs.length; i++) {
-            for (int j = 0; j < brickInputs[i].length; j++)
-                curQueue.add(brickInputs[i][j]);
+        if (BRICK_INPUTS_ENABLED) {
+            for (int i = 0; i < brickInputs.length; i++) {
+                for (int j = 0; j < brickInputs[i].length; j++)
+                    curQueue.add(brickInputs[i][j]);
+            }
         }
 
         curQueue.add(paddleInput);

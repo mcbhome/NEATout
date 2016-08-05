@@ -387,9 +387,13 @@ public class NEATDiagnostics extends JFrame implements Observer {
     }
 
     public void updateLabels() {
+        NumberFormat nf = NumberFormat.getInstance(Locale.US);
+        nf.setMaximumFractionDigits(2);
+        nf.setMinimumFractionDigits(2);
+
         if (population != null) {
             generationLabel.setText("" + population.getGenerationId());
-            maxFitnessLabel.setText("" + population.getTopFitness());
+            maxFitnessLabel.setText("" + nf.format(population.getTopFitness()));
             networkCountLabel.setText("" + population.getGenomes().size());
             currentNetLabelId.setText("" + simulation.getCurrent().getGenome().getId());
         } else {
@@ -408,10 +412,10 @@ public class NEATDiagnostics extends JFrame implements Observer {
             networkDetailConnectionCountLabel.setText("" + curDetailGenome.getConnectionGenes().size());
             networkDetailHiddenNodeCount.setText("" + (curDetailGenome.getNodeGenes().size() - curDetailGenome.getMandatoryNodes().size()));
             networkDetailLayerCount.setText("" + curDetailGenome.getLayers());
-            networkDetailBallInput.setText("" + curDetailGenome.getBallInputNeuron().getInput());
-            networkDetailPaddleInput.setText("" + curDetailGenome.getPaddleInputNeuron().getInput());
-            networkDetailLeftOutput.setText("" + curDetailGenome.getLeftOutputNeuron().getOutput());
-            networkDetailRightOutput.setText("" + curDetailGenome.getRightOutputNeuron().getOutput());
+            networkDetailBallInput.setText("" + nf.format(curDetailGenome.getBallInputNeuron().getInput()));
+            networkDetailPaddleInput.setText("" + nf.format(curDetailGenome.getPaddleInputNeuron().getInput()));
+            networkDetailLeftOutput.setText("" + nf.format(curDetailGenome.getLeftOutputNeuron().getOutput()));
+            networkDetailRightOutput.setText("" + nf.format(curDetailGenome.getRightOutputNeuron().getOutput()));
         }
 
         if (gameStats.isGameStarted()) {
