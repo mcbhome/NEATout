@@ -86,8 +86,10 @@ public class Simulation extends Observable implements Observer, Serializable {
         }
 
         if (type == Update_Args.PLAYER_DIED) {
-            finishSimulationForCurrentNetwork();
-            properlyNotify(Update_Args.NEW_GENERATION);
+            if (gameStats.getLives() == 0) {
+                finishSimulationForCurrentNetwork();
+                properlyNotify(Update_Args.NEW_GENERATION);
+            }
         } else if (type == Update_Args.BRICK_CHANGE) {
             current.setBrickInput(observableArg.getI(), observableArg.getJ(), observableArg.isBrickState());
         } else if (type == Update_Args.NEW_GAME) {
