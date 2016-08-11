@@ -103,10 +103,15 @@ public class Ball
         return yTop;
     }
 
+    public double getHorizontalSpeed() {
+        return this.horizontalSpeed;
+    }
+
     public void changeVerticalDirection()
     {
         goingDown = !goingDown;
     }
+
     public Ellipse2D.Double ballAsEllipse()
     {
         Ellipse2D.Double ball
@@ -119,10 +124,10 @@ public class Ball
      * Determine where ball is placed
      * when the game starts or the player respawns.
      */
-    public void reset()
+    public void reset(boolean simulationMode)
     {
         Commons commons = new Commons();
-        x = commons.getWidth()/2;
+        x = simulationMode ? 4 * commons.getWidth() / 5: commons.getWidth() / 2;
         yTop = commons.getHeight()/ 2;
         horizontalSpeed = 0;
         goingDown = true;

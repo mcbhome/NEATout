@@ -10,10 +10,13 @@ import java.util.Observable;
 public class GameStats extends Observable {
     private static GameStats instance;
 
-    private static final int START_LIVES = 2;
+    private static final int START_LIVES = 1;
     private static final int POINTS_PER_BRICK = 100;
 
-    public static final double MAX_BALL_SPEED = 3;
+    public static final int POINTS_TO_WIN_GAME = 10000;
+
+    public static final double MAX_BALL_SPEED = 2;
+    public static final double MAX_PADDLE_SPEED = 3;
 
     boolean gameStarted;
     boolean[][] bricks;
@@ -23,6 +26,7 @@ public class GameStats extends Observable {
     private boolean gameLost;
     private boolean inGame;
     private boolean gamePaused;
+    private boolean simulationMode;
     private int level;
     private int lives;
     private int score;
@@ -64,7 +68,7 @@ public class GameStats extends Observable {
     public void gameInit() {
         paddle = new Paddle(120,360);
         ball = new Ball(150, 100, 5);
-        ball.reset();
+        ball.reset(simulationMode);
         gameStarted = true;
     }
 
@@ -77,7 +81,7 @@ public class GameStats extends Observable {
         decrementLives();
         checkIfGameOver();
         if (!gameLost) {
-            ball.reset();
+            ball.reset(simulationMode);
             paddle = new Paddle(120, 360);
         }
         properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.PLAYER_DIED));
@@ -86,7 +90,11 @@ public class GameStats extends Observable {
     public void brickHit(int i, int j) {
         this.score += POINTS_PER_BRICK;
         bricks[i][j] = false;
-        properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.BRICK_CHANGE, i, j, false));
+        if (this.score > POINTS_TO_WIN_GAME) {
+            properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.GAME_WON));
+        } else {
+            properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.BRICK_CHANGE, i, j, false));
+        }
     }
 
     public void incrementShots() {
@@ -224,6 +232,14 @@ public class GameStats extends Observable {
 
     public void setGamePaused(boolean gamePaused) {
         this.gamePaused = gamePaused;
+    }
+
+    public boolean isSimulationMode() {
+        return simulationMode;
+    }
+
+    public void setSimulationMode(boolean simulationMode) {
+        this.simulationMode = simulationMode;
     }
 
     public void pauseGame() {

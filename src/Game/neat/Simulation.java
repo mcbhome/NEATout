@@ -10,13 +10,13 @@ import java.util.*;
  * Created by qfi_2 on 26.07.2016.
  */
 public class Simulation extends Observable implements Observer, Serializable {
-    public enum Update_Args {PLAYER_DIED, BRICK_CHANGE, SCORE_CHANGED, MOVEMENT, MISC, NEW_GAME, NEW_GENERATION}
+    public enum Update_Args {PLAYER_DIED, BRICK_CHANGE, SCORE_CHANGED, MOVEMENT, MISC, NEW_GAME, NEW_GENERATION, GAME_WON}
     public static final String TOP_FITNESS_KEY = "TOP_FITNESS";
     public static final String AVERAGE_FITNESS_KEY = "AVERAGE_FITNESS";
     private static final double SCORE_FACTOR = 0.01;
-    private static final double SHOTS_FACTOR = 10.0;
+    private static final double SHOTS_FACTOR = 50.0;
 
-    private static final double MAXIMUM_SPEED_FACTOR = 3;
+    private static final double SHOTS_CEILING = 20;
 
     private Population p;
     private NeuralNetwork current;
@@ -48,14 +48,15 @@ public class Simulation extends Observable implements Observer, Serializable {
 
         mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.SENSOR_PADDLE));
         mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.SENSOR_BALL));
+        mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.SENSOR_BALL_SPEED));
 
-        mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.OUTPUT_LEFT));
-        mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.OUTPUT_RIGHT));
+        mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.OUTPUT_MOV));
 
         mandatoryNeurons.add(new Neuron(Neuron.Neuron_Type.BIAS));
 
 
         p.initializePopulation(mandatoryNeurons);
+
         //enterDebugData();
 
         putGenerationIntoQueue();
@@ -68,7 +69,7 @@ public class Simulation extends Observable implements Observer, Serializable {
             Neuron n = new Neuron(Neuron.Neuron_Type.HIDDEN);
             Neuron m = new Neuron(Neuron.Neuron_Type.HIDDEN);
 
-            g.addFromExistingConnection(new Connection(g.getBrickInputNeurons()[0][0], g.getLeftOutputNeuron(), 1, 1, g));
+            g.addFromExistingConnection(new Connection(g.getBrickInputNeurons()[0][0], g.getMovOutputNeuron(), 1, 1, g));
         }
     }
 
@@ -77,29 +78,29 @@ public class Simulation extends Observable implements Observer, Serializable {
     }
 
     @Override
-    public void update(Observable o, Object arg) {
+    public synchronized void update(Observable o, Object arg) {
         ObservableArg observableArg = (ObservableArg) arg;
         Update_Args type = observableArg.getType();
-
-        if (type != Update_Args.MOVEMENT){
-            System.out.println();
-        }
 
         if (type == Update_Args.PLAYER_DIED) {
             if (gameStats.getLives() == 0) {
                 finishSimulationForCurrentNetwork();
                 properlyNotify(Update_Args.NEW_GENERATION);
             }
-        } else if (type == Update_Args.BRICK_CHANGE) {
-            current.setBrickInput(observableArg.getI(), observableArg.getJ(), observableArg.isBrickState());
-        } else if (type == Update_Args.NEW_GAME) {
-            initBrickInputsForCurrentNetwork();
-        } else if (type == Update_Args.MOVEMENT) {
-            current.setPaddlePosition(gameStats.getPaddle().getXLeft());
-            current.setBallPosition(gameStats.getBall().getX());
-            current.setBallPosition(gameStats.getBall().getX());
-
-            calculateOutputAndMovePaddle();
+        } else if (current != null) {
+            if (type == Update_Args.BRICK_CHANGE) {
+                current.setBrickInput(observableArg.getI(), observableArg.getJ(), observableArg.isBrickState());
+            } else if (type == Update_Args.NEW_GAME) {
+                initBrickInputsForCurrentNetwork();
+            } else if (type == Update_Args.MOVEMENT) {
+                current.setPaddlePosition(gameStats.getPaddle().getXLeft());
+                current.setBallPosition(gameStats.getBall().getX());
+                current.setBallSpeed(gameStats.getBall().getHorizontalSpeed());
+                calculateOutputAndMovePaddle();
+            } else if(type == Update_Args.GAME_WON) {
+                finishSimulationForCurrentNetwork();
+                properlyNotify(Update_Args.GAME_WON);
+            }
         }
     }
 
@@ -107,7 +108,6 @@ public class Simulation extends Observable implements Observer, Serializable {
         current = remainingNetsInGeneration.poll();
 
         if (current == null) {
-            current = null;
             HashMap<String, Double> currentStatistics = historyMap.get(p.getGenerationId());
 
             if (currentStatistics == null) {
@@ -137,7 +137,7 @@ public class Simulation extends Observable implements Observer, Serializable {
     }
 
     public double calculateCurrentFitness() {
-        return gameStats.getScore() * SCORE_FACTOR + gameStats.getShots() * SHOTS_FACTOR;
+        return gameStats.getShots() == 0 ? gameStats.getScore()  :  gameStats.getScore() / gameStats.getShots() + gameStats.getShots() * SHOTS_FACTOR;
     }
 
     public void initBrickInputsForCurrentNetwork() {
@@ -153,20 +153,15 @@ public class Simulation extends Observable implements Observer, Serializable {
     public void calculateOutputAndMovePaddle() {
         current.propagateInputs();
 
-        double dirLeft = current.getLeftOutput();
-        double dirRight = current.getRightOutput();
+        double dir = current.getMovOutput();
 
-        controlPaddle(dirLeft, dirRight);
+        controlPaddle(dir);
 
         current.reset();
     }
 
-    public void controlPaddle(double dirLeft, double dirRight) {
-        if (dirRight < dirLeft) {
-            gameStats.getPaddle().changeDir(Paddle.Direction.LEFT, dirLeft * MAXIMUM_SPEED_FACTOR);
-        } else if (dirRight > dirLeft){
-            gameStats.getPaddle().changeDir(Paddle.Direction.RIGHT, dirRight * MAXIMUM_SPEED_FACTOR);
-        }
+    public void controlPaddle(double dir) {
+        gameStats.getPaddle().changeDir(dir * gameStats.MAX_PADDLE_SPEED);
     }
 
     private void finishSimulationForCurrentNetwork() {

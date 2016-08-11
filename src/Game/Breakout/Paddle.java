@@ -7,9 +7,6 @@ import java.awt.event.*;
 
 public class Paddle
 {
-    public enum Direction {
-        LEFT, RIGHT
-    }
 
     private double xLeft;
     private int pWidth;
@@ -71,22 +68,19 @@ public class Paddle
 
         if (key == KeyEvent.VK_LEFT)
         {
-            changeDir(Direction.LEFT, 1.5);
+            changeDir(-1.5);
         }
 
         if (key == KeyEvent.VK_RIGHT)
         {
-            changeDir(Direction.RIGHT, 1.5);
+            changeDir(1.5);
 
         }
     }
 
-    public void changeDir(Direction dir, double speed) {
-        if (dir == Direction.LEFT) {
-            dx = -2 * speed;
-        } else if (dir == Direction.RIGHT) {
-            dx = 2 * speed;
-        }
+    // <0 for left, >0 for right
+    public void changeDir(double speed) {
+            dx = speed;
     }
 
     public void keyReleased(KeyEvent e)

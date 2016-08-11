@@ -9,7 +9,7 @@ import java.util.ArrayList;
  */
 public class Neuron implements Serializable {
 
-    public enum Neuron_Type { BIAS, SENSOR_BRICK, SENSOR_PADDLE, SENSOR_BALL, HIDDEN, OUTPUT_LEFT, OUTPUT_RIGHT }
+    public enum Neuron_Type { BIAS, SENSOR_BRICK, SENSOR_PADDLE, SENSOR_BALL, SENSOR_BALL_SPEED, HIDDEN, OUTPUT_MOV}
 
     protected final int id;
     protected static int num_neurons = 0;
@@ -25,20 +25,12 @@ public class Neuron implements Serializable {
         this.id = num_neurons++;
         this.type = type;
         successors = new ArrayList<Connection>();
-
-        if (this.type == Neuron_Type.BIAS) {
-            this.depth = -1;
-        }
     }
 
     public Neuron(Neuron n) {
         this.id = n.getId();
         this.type = n.getType();
         this.successors = new ArrayList<Connection>();
-
-        if (this.type == Neuron_Type.BIAS) {
-            this.depth = -1;
-        }
     }
 
     public void setInput(double in) {
@@ -51,7 +43,7 @@ public class Neuron implements Serializable {
     }
 
     public boolean isOutputNeuron() {
-        return this.type == Neuron_Type.OUTPUT_LEFT || this.type == Neuron_Type.OUTPUT_RIGHT;
+        return this.type == Neuron_Type.OUTPUT_MOV;
     }
 
     public void calculateOutput() {
@@ -63,8 +55,9 @@ public class Neuron implements Serializable {
             output = calculateSigmoid(input);
     }
 
+    // Outputs between -1 and 1
     public double calculateSigmoid(double x) {
-        return (1.0 / (1 + Math.exp(-1 * SIGMOID_STEEPNESS * x))) - 0.5;
+        return (2.0 / (1 + Math.exp(-1 * SIGMOID_STEEPNESS * x))) - 1;
     }
 
     public double getOutput() {
@@ -100,7 +93,7 @@ public class Neuron implements Serializable {
 
     public boolean hasSuccessor(Neuron n) {
         for (Connection c : successors) {
-            if (c.getOut().equals(n))
+            if (c.getOut().getId() == n.getId())
                 return true;
         }
 

@@ -1,7 +1,6 @@
 package Game.neat;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
@@ -11,8 +10,9 @@ public class NeuralNetwork implements Serializable {
     private Neuron[][] brickInputNeurons;
     private Neuron paddleInputNeuron;
     private Neuron ballInputNeuron;
-    private Neuron rightOutputNeuron;
-    private Neuron leftOutputNeuron;
+    private Neuron ballSpeedInputNeuron;
+    private Neuron movOutputNeuron;
+    private Neuron biasNeuron;
     private Genome genome;
 
     public NeuralNetwork(Genome g) {
@@ -21,8 +21,9 @@ public class NeuralNetwork implements Serializable {
         this.brickInputNeurons = g.getBrickInputNeurons();
         this.paddleInputNeuron = g.getPaddleInputNeuron();
         this.ballInputNeuron = g.getBallInputNeuron();
-        this.rightOutputNeuron = g.getRightOutputNeuron();
-        this.leftOutputNeuron = g.getLeftOutputNeuron();
+        this.ballSpeedInputNeuron = g.getBallSpeedInputNeuron();
+        this.movOutputNeuron = g.getMovOutputNeuron();
+        this.biasNeuron = g.getBiasNeuron();
 
         initInputDepths();
     }
@@ -38,6 +39,7 @@ public class NeuralNetwork implements Serializable {
 
         paddleInputNeuron.setDepth(0);
         ballInputNeuron.setDepth(0);
+        ballSpeedInputNeuron.setDepth(0);
     }
 
     public void setBrickInput(int i, int j, boolean state) {
@@ -54,12 +56,12 @@ public class NeuralNetwork implements Serializable {
         ballInputNeuron.setInput(x);
     }
 
-    public double getRightOutput() {
-        return rightOutputNeuron.getOutput();
+    public void setBallSpeed(double x) {
+        ballSpeedInputNeuron.setInput(x);
     }
 
-    public double getLeftOutput() {
-        return leftOutputNeuron.getOutput();
+    public double getMovOutput() {
+        return movOutputNeuron.getOutput();
     }
 
     public void propagateInputs() {
@@ -74,6 +76,7 @@ public class NeuralNetwork implements Serializable {
 
         neuronQueue.add(paddleInputNeuron);
         neuronQueue.add(ballInputNeuron);
+        neuronQueue.add(biasNeuron);
 
         while (!neuronQueue.isEmpty()) {
             Neuron cur = neuronQueue.poll();
@@ -81,6 +84,9 @@ public class NeuralNetwork implements Serializable {
             cur.propagateOutputToSuccessors();
             for (Connection c : cur.getSuccessors()) {
                 if (!neuronQueue.contains(c.getOut())) {
+                    neuronQueue.add(c.getOut());
+                } else {
+                    neuronQueue.remove(c.getOut());
                     neuronQueue.add(c.getOut());
                 }
             }

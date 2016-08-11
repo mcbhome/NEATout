@@ -9,20 +9,21 @@ import java.util.*;
  */
 public class Population implements Serializable {
     private int gen_count = 0;
-    private int conn_count = 0;
+    private int conn_count = 1;
 
     private static final int POPULATION_SIZE = 30;
-    private static final int POPULATION_DENOMINATOR = 3;
+    private static final int POPULATION_DENOMINATOR = 2;
 
-    private static final int MAXIMUM_STALENESS = 20;
+    private static final int MAXIMUM_STALENESS = 5;
 
-    private static final double COMPATIBILITY_THRESHOLD = 3;
-    private static final double C1 = 1;
-    private static final double C2 = 1;
-    private static final double C3 = 3;
+    private static final double COMPATIBILITY_THRESHOLD = 2;
+    private static final double C1 = 2;
+    private static final double C2 = 2;
+    private static final double C3 = 2;
 
-    private static final double MUTATION_WEIGHT_BOUND = 5;
-    private static final double PERTURBATION_FACTOR_BOUND = 2;
+    private static final double MUTATION_WEIGHT_BOUND = 3;
+    private static final double WEIGHT_DECIMAL_STEP_SIZE = 0.01;
+    private static final double PERTURBATION_FACTOR_BOUND = 1.5;
 
     private static final double NODE_MUTATE_CHANCE = 0.03;
     private static final double EDGE_MUTATE_CHANCE = 0.05;
@@ -36,6 +37,7 @@ public class Population implements Serializable {
 
     private transient double top_fitness = 0;
     private transient int staleness = 0;
+    private boolean fitnessUpdated = false;
 
     private int gen_id;
     private ArrayList<Genome> genomes;
@@ -68,14 +70,28 @@ public class Population implements Serializable {
             genomes.add(g);
         }
 
+        /*for (Genome g : genomes) {
+            for (int i = 0; i < 100; i++) {
+                mutate(g);
+            }
+        }*/
+
         for (Genome g : genomes) {
             sortIntoSpecies(g);
         }
+
+        /*for (int i = 0; i < 100; i++) {
+            newGeneration();
+        }*/
     }
 
     public void newGeneration() {
         gen_id = gen_count++;
         cullSpecies();
+
+        if (!fitnessUpdated) {
+            staleness++;
+        }
 
         ArrayList<Genome> offspring = new ArrayList<Genome>();
         int genomeSize = genomes.size();
@@ -83,8 +99,6 @@ public class Population implements Serializable {
         if (staleness >= MAXIMUM_STALENESS) {
             stalenessCleanUp();
         }
-
-        int offspringSize = POPULATION_SIZE - genomeSize;
 
         double totalAverageFitness = 0;
 
@@ -94,36 +108,57 @@ public class Population implements Serializable {
 
         for (Species s : species) {
             int numOffspring;
-
             if (totalAverageFitness == 0) {
-                numOffspring = (int) ((double) offspringSize / species.size() + 0.5);
+                numOffspring = (int) ((double) POPULATION_SIZE / species.size() + 0.5);
             } else {
-                numOffspring = (int) ((s.getAverageFitness() / totalAverageFitness) * offspringSize + 0.5);
+                numOffspring = (int) ((s.getAverageFitness() / totalAverageFitness) * POPULATION_SIZE + 0.5);
             }
 
-            for (int i = 0; i < numOffspring; i++) {
+
+            while (s.getGenomes().size() > numOffspring) {
+                Genome g = s.getGenomes().get(0);
+                genomes.remove(g);
+                s.getGenomes().remove(g);
+            }
+
+            int offspringProduced = s.getGenomes().size();
+
+            while (offspringProduced < numOffspring) {
                 offspring.add(produceOffspring(s));
+                offspringProduced++;
             }
         }
+
+        ArrayList<Species> toRemove = new ArrayList<>();
+
+        for (Species s : species) {
+            if (s.getGenomes().size() == 0) {
+                toRemove.add(s);
+            }
+        }
+
+        species.removeAll(toRemove);
+
+        ArrayList<Genome> genomesToSort = new ArrayList<>(genomes);
 
         for (Species s : species) {
             Genome rnd = s.getGenomes().get(random.nextInt(s.getGenomes().size()));
             s.setRepresentativeAndResetGenomes(rnd);
+            genomesToSort.remove(rnd);
         }
 
         genomes.addAll(offspring);
+        genomesToSort.addAll(offspring);
 
-
-        for (Genome g : genomes) {
+        for (Genome g : genomesToSort) {
             sortIntoSpecies(g);
         }
 
         for (Genome g: genomes) {
-            g.setFitness(0);
-            g.setSharedFitness(0);
+            g.reset();
         }
 
-        this.top_fitness = 0;
+        fitnessUpdated = false;
     }
 
     private void cullSpecies() {
@@ -164,11 +199,12 @@ public class Population implements Serializable {
             genomes.removeAll(toRemove.getGenomes());
             species.remove(0);
         }
+
+        staleness = 0;
     }
 
     public void sortIntoSpecies(Genome g) {
         boolean foundSpecies = false;
-
         for (Species s : species) {
             Genome r = s.getRepresentative();
             double dist = calculateCompatibilityDistance(g, r);
@@ -176,11 +212,16 @@ public class Population implements Serializable {
             if (dist < COMPATIBILITY_THRESHOLD) {
                 s.addGenome(g);
                 foundSpecies = true;
+
             }
+
+            if (foundSpecies)
+                break;
         }
 
-        if (!foundSpecies)
+        if (!foundSpecies) {
             species.add(new Species(g));
+        }
     }
 
     public void updateFitness(Genome g, double fitness) {
@@ -193,13 +234,12 @@ public class Population implements Serializable {
             }
         }
 
-        if (s == null)
-            System.out.println();
         g.setSharedFitness(fitness / s.getGenomes().size());
 
         if (fitness > top_fitness) {
             top_fitness = fitness;
             staleness = 0;
+            fitnessUpdated = true;
         }
     }
 
@@ -208,6 +248,9 @@ public class Population implements Serializable {
 
         if (n == 0)
             return 0;
+
+        if (n < 10)
+            n = 1;
 
         double e = calculateExcessGenes(a, b);
         double d = calculateDisjointGenes(a, b);
@@ -221,7 +264,6 @@ public class Population implements Serializable {
     }
 
     private double calculateDisjointGenes(Genome a, Genome b) {
-        HashMap<Integer, Boolean> checkedGenes = new HashMap<Integer, Boolean>();
         int numDisjointGenes = 0;
         int aInnov = a.getHighestInnov();
         int bInnov = b.getHighestInnov();
@@ -229,7 +271,6 @@ public class Population implements Serializable {
         for (Connection c : a.getConnectionGenes()) {
             if (c.getInnov() < bInnov) {
                 if (b.isDisjoint(c)) {
-                    checkedGenes.put(c.getInnov(), true);
                     numDisjointGenes++;
                 }
             }
@@ -238,7 +279,6 @@ public class Population implements Serializable {
         for (Connection c : b.getConnectionGenes()) {
             if (c.getInnov() < aInnov) {
                 if (a.isDisjoint(c)) {
-                    checkedGenes.put(c.getInnov(), true);
                     numDisjointGenes++;
                 }
             }
@@ -252,11 +292,11 @@ public class Population implements Serializable {
         double sharedSum = 0;
 
         for (Connection c : a.getConnectionGenes()) {
-            double d = b.hasConnection(c.getIn(), c.getOut());
+            double d = b.hasConnection(c);
 
             if (d != 0) {
                 numSharedWeights++;
-                sharedSum += d;
+                sharedSum += Math.abs(d - c.getWeight());
             }
         }
 
@@ -444,7 +484,7 @@ public class Population implements Serializable {
         rnd = Math.random();
 
         if (rnd < EDGE_PERTURB_CHANCE) {
-            //perturbEdges(g);
+            perturbEdges(g);
         }
     }
 
@@ -460,30 +500,30 @@ public class Population implements Serializable {
 
             c.setEnabled(false);
 
-            Connection c1 = new Connection(in, n, getNextInnov(in.getId(), out.getId()), 1, g);
-            Connection c2 = new Connection(n, out, getNextInnov(in.getId(), out.getId()), c.getWeight(), g);
+            Connection c1 = new Connection(in, n, getNextInnov(in.getId(), n.getId()), 1, g);
+            Connection c2 = new Connection(n, out, getNextInnov(n.getId(), out.getId()), c.getWeight(), g);
 
             g.addFromExistingConnection(c1);
             g.addFromExistingConnection(c2);
         }
     }
 
+    // Take random valid in and out nodes, create new connection, add it to genome
     private void edgeMutation(Genome g) {
-        ArrayList<Neuron> validSourceNodes = g.getNodeGenes();
+        ArrayList<Neuron> validSourceNodes = g.getValidSourceNodeGenes();
         boolean addedConnection = false;
         Neuron in;
         Neuron out;
 
-        do {
-            in = validSourceNodes.get(random.nextInt(validSourceNodes.size()));
-        } while (in == null || in.isOutputNeuron());
+        in = validSourceNodes.get(random.nextInt(validSourceNodes.size()));
 
-        ArrayList<Neuron> validDestNodes = g.getNodesMinDepth(in.getDepth() + 1);
+        ArrayList<Neuron> validDestNodes = g.getValidDestNodesMinDepth(in.getDepth() + 1);
 
         while (!validDestNodes.isEmpty() && !addedConnection) {
             out = validDestNodes.get(random.nextInt(validDestNodes.size()));
+
             if (!in.hasSuccessor(out)) {
-                double connectionWeight = Math.random() * MUTATION_WEIGHT_BOUND - MUTATION_WEIGHT_BOUND;
+                double connectionWeight = getRandomDoubleWithStepSize() * MUTATION_WEIGHT_BOUND * 2 - MUTATION_WEIGHT_BOUND;
                 Connection c = new Connection(in, out, getNextInnov(in.getId(), out.getId()), connectionWeight, g);
                 g.addFromExistingConnection(c);
                 addedConnection = true;
@@ -495,8 +535,16 @@ public class Population implements Serializable {
 
     private void perturbEdges(Genome g) {
         for (Connection c : g.getConnectionGenes()) {
-            c.setWeight(c.getWeight() + c.getWeight() * (Math.random() * PERTURBATION_FACTOR_BOUND - PERTURBATION_FACTOR_BOUND));
+            double factor = getRandomDoubleWithStepSize() * PERTURBATION_FACTOR_BOUND * 2 - PERTURBATION_FACTOR_BOUND;
+            double d = c.getWeight() * factor;
+            c.setWeight(d);
         }
+    }
+
+    private double getRandomDoubleWithStepSize() {
+        int i = random.nextInt((int) (1 / WEIGHT_DECIMAL_STEP_SIZE));
+        double res = i * WEIGHT_DECIMAL_STEP_SIZE;
+        return res;
     }
 
     public int getGenerationId() {

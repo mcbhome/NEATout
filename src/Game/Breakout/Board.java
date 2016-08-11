@@ -22,7 +22,6 @@ public class Board extends JPanel
     private boolean skippedMainMenu = false;
     private GameStats gameStats;
     private Commons commons;
-    private boolean simulationMode;
     private String bg = "../res/landingScreen.jpg";
 
 
@@ -95,7 +94,7 @@ public class Board extends JPanel
             if (gameStats.isPlayerDead())
             {
                 drawGameState(g);
-                if (!simulationMode) {
+                if (!gameStats.isSimulationMode()) {
                     drawGameOver(g);
                 }
             }
@@ -193,8 +192,7 @@ public class Board extends JPanel
 
         if (key == KeyEvent.VK_CONTROL) {
             if (!skippedMainMenu) {
-                System.out.println("NEAT, WIP");
-                simulationMode = true;
+                gameStats.setSimulationMode(true);
                 skippedMainMenu = true;
                 startNewGame();
 
@@ -384,21 +382,19 @@ public class Board extends JPanel
      * bricks to the ArrayList for every
      * next level.
      */
+
     public void randomizeBricks()
     {
 
         Random r = new Random();
-        int minBWidth = 38;
-        int maxBWidth = 65;
-        int newBWidth = r.nextInt(maxBWidth - minBWidth + 1) + minBWidth;
-//      commons.setBWidth(newBWidth);
         int randomInt;
+
         for (int i=20, k = 0; i < commons.getHeight()*0.4; i+=commons.getBHeight()+6, k++)
         {
             for (int j=10, l = 0; j<commons.getWidth()-15; j += commons.getBWidth()+5, l++)
             {
                 randomInt = r.nextInt(2);
-                if (randomInt == 1) {
+                if (randomInt == 1 || (gameStats.isSimulationMode() && gameStats.getLevel() == 1)) {
                     synchronized (bricks) {
                         bricks.add(new Brick(j, i, new int[]{k, l}));
                     }
@@ -436,15 +432,15 @@ public class Board extends JPanel
         //ArrayList copy to avoid ConcurrentModificationError
         ArrayList<Brick> bricksCopy = new ArrayList<Brick>(bricks);
         synchronized (bricks) {
+            boolean brickHit = false;
             for (Brick a : bricks) {
                 Brick current = a;
                 if ((gameStats.getBall().ballAsEllipse()).intersects(current.brickAsRect())) {
-
-                    gameStats.getBall().changeVerticalDirection();
+                    brickHit = true;
                     current.destroyBrick();
                     int[] ids = current.getIds();
                     gameStats.brickHit(ids[0], ids[1]);
-                    //System.out.println("Brick "+i+" is destroyed!");
+
                     try {
                         bricksCopy.remove(a);
                     } catch (Exception IndexOutOfBoundsException) {
@@ -452,6 +448,9 @@ public class Board extends JPanel
                 }
 
                 //i++;
+            }
+            if (brickHit) {
+                gameStats.getBall().changeVerticalDirection();
             }
             bricks = bricksCopy;
         }
@@ -467,29 +466,29 @@ public class Board extends JPanel
     {
         if (gameStats.getLives() == 0)
         {
-            if (!simulationMode) {
+            if (!gameStats.isSimulationMode()) {
                 gameStats.setInGame(false);
             }
             gameStats.setPlayerIsDead();
             gameStats.setGameLost(true);
-            if (simulationMode) {
+            if (gameStats.isSimulationMode()) {
                 startNewGame();
             }
             return;
         }
         if (gameStats.getBall().getY() + (2 * gameStats.getBall().getRadius()) == commons.getHeight())
         {
-            if (!simulationMode)
+            if (!gameStats.isSimulationMode())
                 gameStats.setInGame(false);
 
-            if (gameStats.getLives() != 0 && !simulationMode)
+            if (gameStats.getLives() != 0 && !gameStats.isSimulationMode())
                 gameStats.setGamePaused(true);
 
             gameStats.playerDied();
 
             if (gameStats.getLives() == 0) {
                 gameStats.setPlayerIsDead();
-                if (simulationMode) {
+                if (gameStats.isSimulationMode()) {
                     startNewGame();
                 }
             }
@@ -507,6 +506,10 @@ public class Board extends JPanel
      */
     public void checkForVictory()
     {
+        if (gameStats.getScore() > GameStats.POINTS_TO_WIN_GAME) {
+            startNewGame();
+        }
+
         synchronized (bricks) {
             if (bricks.size() == 0) {
                 gameStats.setGameWon(true);

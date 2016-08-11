@@ -2,7 +2,6 @@ package Game.neat;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -11,6 +10,7 @@ import java.util.*;
 public class Genome implements Serializable {
     private static int numGenomes = 0;
 
+    // This specifies if the brick array is taken into account
     public final boolean BRICK_INPUTS_ENABLED = false;
 
     private int id;
@@ -18,8 +18,8 @@ public class Genome implements Serializable {
     private BrickInputNeuron[][] brickInputs;
     private Neuron paddleInput;
     private Neuron ballInput;
-    private Neuron leftOutput;
-    private Neuron rightOutput;
+    private Neuron ballSpeedInput;
+    private Neuron movOutput;
     private Neuron biasNeuron;
     private ArrayList<Connection> connectionGenes;
     private transient double fitness;
@@ -40,6 +40,7 @@ public class Genome implements Serializable {
 
     }
 
+    // Reset all neurons and fitness stats
     public void reset() {
         for (Neuron n : nodeGenes) {
             n.reset();
@@ -56,6 +57,7 @@ public class Genome implements Serializable {
         return this;
     }
 
+    // Add from existing node and connections
     public Genome(Genome parent) {
         this();
 
@@ -72,6 +74,7 @@ public class Genome implements Serializable {
         this.calculateDepths();
     }
 
+    // For initial genome generation
     public Genome(ArrayList<Neuron> inputOutputNeurons) {
         this();
 
@@ -82,8 +85,9 @@ public class Genome implements Serializable {
         this.calculateDepths();
     }
 
+    // Automatically creates a copy of the neuron that should be added
     public Neuron addFromExistingNode(Neuron n) {
-        Neuron newNode = null;
+        Neuron newNode;
 
         if (n.getType() == Neuron.Neuron_Type.SENSOR_BRICK) {
             newNode = new BrickInputNeuron((BrickInputNeuron) n);
@@ -96,6 +100,7 @@ public class Genome implements Serializable {
         return newNode;
     }
 
+    // Automatically creates a copy of the connection that should be added, the connection constructor takes care of adding missing neurons
     public Connection addFromExistingConnection(Connection c) {
         Connection res = new Connection(c, this);
         res.getIn().addSuccessor(res);
@@ -105,7 +110,7 @@ public class Genome implements Serializable {
         return res;
     }
 
-
+    // Sort connection genes by innovation number
     private void sortConnectionGenes() {
         Collections.sort(connectionGenes, new Comparator<Connection>() {
             @Override
@@ -123,9 +128,9 @@ public class Genome implements Serializable {
         return connectionGenes;
     }
 
-    public double hasConnection(Neuron a, Neuron b) {
+    public double hasConnection(Connection conn) {
         for (Connection c : connectionGenes) {
-            if (c.getIn().equals(a) && c.getOut().equals(b))
+            if (c.getInnov() == conn.getInnov())
                 return c.getWeight();
         }
 
@@ -163,7 +168,6 @@ public class Genome implements Serializable {
         return sharedFitness;
     }
 
-    // TODO: Node genes aswell?
     public int getGenomeCount() {
         return connectionGenes.size() + nodeGenes.size();
     }
@@ -185,7 +189,7 @@ public class Genome implements Serializable {
                 return true;
         }
 
-        // Else: It has to be excess! Return for safety
+        // Else: It has to be excess! Return false for safety
         return false;
     }
 
@@ -196,9 +200,11 @@ public class Genome implements Serializable {
     public ArrayList<Connection> getEnabledConnectionGenes() {
         ArrayList<Connection> res = new ArrayList<Connection>();
 
-        for (Connection c : connectionGenes)
-            if (c.isEnabled())
+        for (Connection c : connectionGenes) {
+            if (c.isEnabled()) {
                 res.add(c);
+            }
+        }
 
         return res;
     }
@@ -207,11 +213,18 @@ public class Genome implements Serializable {
         return this.nodeGenes;
     }
 
-    public ArrayList<Neuron> getNodesMinDepth(int minDepth) {
+    public ArrayList<Neuron> getValidSourceNodeGenes() {
+        ArrayList<Neuron> result = new ArrayList<>(this.nodeGenes);
+        result.remove(movOutput);
+
+        return result;
+    }
+
+    public ArrayList<Neuron> getValidDestNodesMinDepth(int minDepth) {
         ArrayList<Neuron> res = new ArrayList<Neuron>();
 
         for (Neuron n : getNodeGenes()) {
-            if (n.getDepth() >= minDepth)
+            if (n.getDepth() >= minDepth && !n.isInputNeuron())
                 res.add(n);
         }
 
@@ -227,17 +240,17 @@ public class Genome implements Serializable {
             } else if (n.getType() == Neuron.Neuron_Type.BIAS) {
                 this.biasNeuron = n;
                 this.nodeGenes.add(n);
+            } else if (n.getType() == Neuron.Neuron_Type.SENSOR_BALL_SPEED) {
+                this.ballSpeedInput = n;
+                this.nodeGenes.add(n);
             } else if (n.getType() == Neuron.Neuron_Type.SENSOR_PADDLE) {
                 this.paddleInput = n;
                 this.nodeGenes.add(n);
             } else if (n.getType() == Neuron.Neuron_Type.SENSOR_BALL) {
                 this.ballInput = n;
                 this.nodeGenes.add(n);
-            } else if (n.getType() == Neuron.Neuron_Type.OUTPUT_LEFT) {
-                this.leftOutput = n;
-                this.nodeGenes.add(n);
-            } else if (n.getType() == Neuron.Neuron_Type.OUTPUT_RIGHT) {
-                this.rightOutput = n;
+            } else if (n.getType() == Neuron.Neuron_Type.OUTPUT_MOV) {
+                this.movOutput = n;
                 this.nodeGenes.add(n);
             }
         } else {
@@ -281,12 +294,8 @@ public class Genome implements Serializable {
         return ballInput;
     }
 
-    public Neuron getLeftOutputNeuron() {
-        return leftOutput;
-    }
-
-    public Neuron getRightOutputNeuron() {
-        return rightOutput;
+    public Neuron getMovOutputNeuron() {
+        return movOutput;
     }
 
     public ArrayList<Neuron> getMandatoryNodes() {
@@ -302,8 +311,9 @@ public class Genome implements Serializable {
 
         res.add(paddleInput);
         res.add(ballInput);
-        res.add(leftOutput);
-        res.add(rightOutput);
+        res.add(ballSpeedInput);
+        res.add(movOutput);
+        res.add(biasNeuron);
 
         return res;
     }
@@ -337,44 +347,41 @@ public class Genome implements Serializable {
 
         curQueue.add(paddleInput);
         curQueue.add(ballInput);
+        curQueue.add(ballSpeedInput);
+        curQueue.add(biasNeuron);
 
-        int curDepth = 1;
+        int curDepth = 0;
 
         while (!curQueue.isEmpty()) {
+            curDepth++;
+
             while (!curQueue.isEmpty()) {
                 Neuron n = curQueue.poll();
-
-                if (n.isInputNeuron())
-                    curDepth = 1;
 
                 ArrayList<Connection> successors = n.getSuccessors();
 
                 for (Connection c : successors) {
                     Neuron cur = c.getOut();
-                    if (!nextQueue.contains(cur)) {
-                        nextQueue.add(cur);
-                    }
-                    if (cur.getDepth() < curDepth || cur.getDepth() == Integer.MAX_VALUE) {
+                    nextQueue.add(cur);
+                    if (cur.getDepth() < curDepth || cur.getDepth() == Integer.MAX_VALUE || (cur.getDepth() == 0 && !cur.isInputNeuron())) {
                         cur.setDepth(curDepth);
                     }
                 }
             }
 
-            curDepth++;
             curQueue = nextQueue;
             nextQueue = new LinkedList<Neuron>();
         }
 
-        if (rightOutput.getDepth() != Integer.MAX_VALUE && rightOutput.getDepth() > leftOutput.getDepth()) {
-            leftOutput.setDepth(rightOutput.getDepth());
-        } else if (leftOutput.getDepth() != Integer.MAX_VALUE && leftOutput.getDepth() > rightOutput.getDepth()) {
-            rightOutput.setDepth(leftOutput.getDepth());
-        } else if (leftOutput.getDepth() == 0 && rightOutput.getDepth() == 0) {
-            leftOutput.setDepth(Integer.MAX_VALUE);
-            rightOutput.setDepth(Integer.MAX_VALUE);
+        if (movOutput.getDepth() == 0) {
+            movOutput.setDepth(Integer.MAX_VALUE);
         }
 
-        layers = curDepth - 1;
+        if (movOutput.getDepth() == Integer.MAX_VALUE)
+            layers = curDepth + 1;
+        else {
+            layers = curDepth;
+        }
     }
 
     public int getLayers() {
@@ -382,7 +389,20 @@ public class Genome implements Serializable {
     }
 
     public int getGenomeCountWithoutBrickNeurons() {
-        return nodeGenes.size() - brickInputs.length * brickInputs[0].length + connectionGenes.size();
+        int brickInputSize = 0;
+
+        if (BRICK_INPUTS_ENABLED) {
+            brickInputSize = brickInputs.length * brickInputs[0].length;
+        }
+        return nodeGenes.size() - brickInputSize + connectionGenes.size();
+    }
+
+    public Neuron getBiasNeuron() {
+        return biasNeuron;
+    }
+
+    public Neuron getBallSpeedInputNeuron() {
+        return ballSpeedInput;
     }
 
     public static void resetGenomeCount() {

@@ -40,8 +40,6 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private JLabel networkDetailLayerCount;
     private JLabel networkDetailBallInput;
     private JLabel networkDetailPaddleInput;
-    private JLabel networkDetailLeftOutput;
-    private JLabel networkDetailRightOutput;
     private JComboBox networkDetailComboBox;
     private JButton networkDetaiLoadCurrent;
     private JButton networkDetailLoadID;
@@ -62,6 +60,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private Genome curDetailGenome;
     private boolean showCurrent;
     private int generationSaveMod = 0;
+    private int lastSavedGeneration;
     private String[] networkTableColumnNames = {"ID", "SpeciesID", "# Nodes", "#Connections (#Active)", "Fitness", "SharedFitness"};
     private String[] historyTableColumnNames = {"Gen. ID", "Average Fitness", "Top Fitness"};
 
@@ -189,7 +188,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
                     setSimulation(sim);
                     updateUIComponents();
                 } catch (Exception exception) {
-
+                    exception.printStackTrace();
                 }
             }
         });
@@ -355,7 +354,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
                     curDetailGenome = simulation.getCurrent().getGenome();
                 }
 
-                if (generationSaveMod != 0 && simulation.getPopulation().getGenerationId() % generationSaveMod == 0) {
+                if (generationSaveMod != 0 && simulation.getPopulation().getGenerationId() % generationSaveMod == 0 && simulation.getPopulation().getGenerationId() != lastSavedGeneration) {
                     try {
                         serializeSim();
                     } catch (IOException e) {
@@ -391,7 +390,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
         nf.setMaximumFractionDigits(2);
         nf.setMinimumFractionDigits(2);
 
-        if (population != null) {
+        if (population != null && simulation.getCurrent() != null) {
             generationLabel.setText("" + population.getGenerationId());
             maxFitnessLabel.setText("" + nf.format(population.getTopFitness()));
             networkCountLabel.setText("" + population.getGenomes().size());
@@ -414,8 +413,6 @@ public class NEATDiagnostics extends JFrame implements Observer {
             networkDetailLayerCount.setText("" + curDetailGenome.getLayers());
             networkDetailBallInput.setText("" + nf.format(curDetailGenome.getBallInputNeuron().getInput()));
             networkDetailPaddleInput.setText("" + nf.format(curDetailGenome.getPaddleInputNeuron().getInput()));
-            networkDetailLeftOutput.setText("" + nf.format(curDetailGenome.getLeftOutputNeuron().getOutput()));
-            networkDetailRightOutput.setText("" + nf.format(curDetailGenome.getRightOutputNeuron().getOutput()));
         }
 
         if (gameStats.isGameStarted()) {
@@ -491,6 +488,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
         fis.close();
         ois.close();
 
+
         return res;
     }
 
@@ -502,6 +500,8 @@ public class NEATDiagnostics extends JFrame implements Observer {
 
         fos.close();
         oos.close();
+
+        lastSavedGeneration = simulation.getPopulation().getGenerationId();
     }
 
     private void setSimulation(Simulation s) {
@@ -618,11 +618,11 @@ public class NEATDiagnostics extends JFrame implements Observer {
         networkDetailLayerCount.setText("Label");
         panel3.add(networkDetailLayerCount, new com.intellij.uiDesigner.core.GridConstraints(3, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel4 = new JPanel();
-        panel4.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel4.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
         networkDetailPane.add(panel4, new com.intellij.uiDesigner.core.GridConstraints(1, 2, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
         panel5.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(10, 10, 10, 10), -1, -1));
-        panel4.add(panel5, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panel4.add(panel5, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         panel5.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Inputs"));
         final JLabel label10 = new JLabel();
         label10.setText("BallX:");
@@ -636,25 +636,9 @@ public class NEATDiagnostics extends JFrame implements Observer {
         networkDetailPaddleInput = new JLabel();
         networkDetailPaddleInput.setText("Label");
         panel5.add(networkDetailPaddleInput, new com.intellij.uiDesigner.core.GridConstraints(1, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JPanel panel6 = new JPanel();
-        panel6.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(10, 10, 10, 10), -1, -1));
-        panel4.add(panel6, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        panel6.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Outputs"));
         final JLabel label12 = new JLabel();
-        label12.setText("Left:");
-        panel6.add(label12, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        networkDetailLeftOutput = new JLabel();
-        networkDetailLeftOutput.setText("Label");
-        panel6.add(networkDetailLeftOutput, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JLabel label13 = new JLabel();
-        label13.setText("Right:");
-        panel6.add(label13, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        networkDetailRightOutput = new JLabel();
-        networkDetailRightOutput.setText("Label");
-        panel6.add(networkDetailRightOutput, new com.intellij.uiDesigner.core.GridConstraints(1, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JLabel label14 = new JLabel();
-        label14.setText("Network");
-        networkDetailPane.add(label14, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        label12.setText("Network");
+        networkDetailPane.add(label12, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         networkDetailPane.add(networkDetailComboBox, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         networkDetaiLoadCurrent = new JButton();
         networkDetaiLoadCurrent.setText("Load Current");

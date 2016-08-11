@@ -9,17 +9,21 @@ import java.util.Comparator;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Species implements Serializable {
+    private static final int MAXIMUM_STALENESS = 20;
     private static int species_count = 0;
     private int id;
     private ArrayList<Genome> genomes;
     private Genome representative;
     private double totalSharedFitness;
+    private double topFitness;
+    private int staleness;
 
     public Species(Genome representative) {
         genomes = new ArrayList<Genome>();
         this.representative = representative;
         genomes.add(representative);
         this.id = ++species_count;
+        this.staleness = 0;
     }
 
     public void calculateSharedFitness() {
@@ -46,6 +50,8 @@ public class Species implements Serializable {
             }
         });
     }
+
+
 
 
     public void calculateTotalFitness() {
@@ -81,6 +87,7 @@ public class Species implements Serializable {
     public void setRepresentativeAndResetGenomes(Genome g) {
         genomes.clear();
         genomes.add(g);
+        this.representative = g;
     }
 
     public boolean hasGenome(Genome g) {
@@ -93,6 +100,24 @@ public class Species implements Serializable {
 
     public int getId() {
         return id;
+    }
+
+    public boolean isStale() {
+        for (Genome g : genomes) {
+            if (g.getFitness() > this.topFitness) {
+                staleness = 0;
+                topFitness = g.getFitness();
+                return false;
+            }
+        }
+
+        staleness++;
+
+        if (staleness > MAXIMUM_STALENESS) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public static void resetSpeciesCount() {
