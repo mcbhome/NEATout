@@ -27,13 +27,11 @@ public class GameStats extends Observable {
     private boolean inGame;
     private boolean gamePaused;
     private boolean simulationMode;
-    private int level;
+    private int level = 1;
     private int lives;
     private int score;
     private int shots;
     private boolean playerIsDead;
-
-    private boolean isInitialized;
 
     private GameStats() {
         bricks = new boolean[11][7];
@@ -45,13 +43,6 @@ public class GameStats extends Observable {
             instance = new GameStats();
 
         return instance;
-    }
-
-    public void initialize(boolean[][] bricks, Paddle paddle, Ball ball) {
-        this.bricks = bricks;
-        this.paddle = paddle;
-        this.ball = ball;
-        isInitialized = true;
     }
 
     public void newGame() {
