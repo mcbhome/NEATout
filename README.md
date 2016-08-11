@@ -13,6 +13,7 @@ Please note that this source code was implemented with IntelliJ IDEA. If you wan
 What's next?
 ======
 - Documentation (ugh)
+- Creating a Swing-only UI without using any IntelliJ stuff (bigger ugh)
 - Providing a "play only" mode in which one network can be selected to run without training the population
 - Changes so that population files are deserializable after changes on the source and compiler-independent (serialVersionUID)
 - Afterwards: Uploading an executable .jar and example populations
