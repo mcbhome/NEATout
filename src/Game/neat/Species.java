@@ -9,6 +9,8 @@ import java.util.Comparator;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Species implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private static final int MAXIMUM_STALENESS = 20;
     private static int species_count = 0;
     private int id;

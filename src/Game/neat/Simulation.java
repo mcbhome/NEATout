@@ -10,13 +10,16 @@ import java.util.*;
  * Created by qfi_2 on 26.07.2016.
  */
 public class Simulation extends Observable implements Observer, Serializable {
-    public enum Update_Args {PLAYER_DIED, BRICK_CHANGE, SCORE_CHANGED, MOVEMENT, MISC, NEW_GAME, NEW_GENERATION, GAME_WON}
+    private static final long serialVersionUID = 1L;
+
+    public enum Update_Args {PLAYER_DIED, BRICK_CHANGE, SCORE_CHANGED, MOVEMENT, MISC, NEW_GAME, BRICKS_RANDOMIZED, NEW_GENERATION, GAME_WON}
     public static final String TOP_FITNESS_KEY = "TOP_FITNESS";
     public static final String AVERAGE_FITNESS_KEY = "AVERAGE_FITNESS";
+
+    private static boolean trainingMode = true;
+
     private static final double SCORE_FACTOR = 0.01;
     private static final double SHOTS_FACTOR = 50.0;
-
-    private static final double SHOTS_CEILING = 20;
 
     private Population p;
     private NeuralNetwork current;
@@ -26,6 +29,7 @@ public class Simulation extends Observable implements Observer, Serializable {
     private TreeMap<Integer, HashMap<String, Double>> historyMap;
 
     private transient GameStats gameStats;
+    private transient LinkedList<NeuralNetwork> allNetsInGeneration;
     private transient LinkedList<NeuralNetwork> remainingNetsInGeneration;
     private transient HashMap<NeuralNetwork, Double> calculatedFitnesses;
 
@@ -33,6 +37,7 @@ public class Simulation extends Observable implements Observer, Serializable {
         this.gameStats = gameStats;
         p = new Population();
         remainingNetsInGeneration = new LinkedList<NeuralNetwork>();
+        allNetsInGeneration = new LinkedList<>();
         calculatedFitnesses = new HashMap<NeuralNetwork, Double>();
         historyMap = new TreeMap<Integer, HashMap<String, Double>>();
 
@@ -84,8 +89,10 @@ public class Simulation extends Observable implements Observer, Serializable {
 
         if (type == Update_Args.PLAYER_DIED) {
             if (gameStats.getLives() == 0) {
-                finishSimulationForCurrentNetwork();
-                properlyNotify(Update_Args.NEW_GENERATION);
+                if (trainingMode) {
+                    finishSimulationForCurrentNetwork();
+                    properlyNotify(Update_Args.NEW_GENERATION);
+                }
             }
         } else if (current != null) {
             if (type == Update_Args.BRICK_CHANGE) {
@@ -98,7 +105,9 @@ public class Simulation extends Observable implements Observer, Serializable {
                 current.setBallSpeed(gameStats.getBall().getHorizontalSpeed());
                 calculateOutputAndMovePaddle();
             } else if(type == Update_Args.GAME_WON) {
-                finishSimulationForCurrentNetwork();
+                if (trainingMode) {
+                    finishSimulationForCurrentNetwork();
+                }
                 properlyNotify(Update_Args.GAME_WON);
             }
         }
@@ -191,11 +200,14 @@ public class Simulation extends Observable implements Observer, Serializable {
 
     private void putGenerationIntoQueue() {
         remainingNetsInGeneration.clear();
+        allNetsInGeneration.clear();
         calculatedFitnesses.clear();
 
         for (Genome g : p.getGenomes()) {
             remainingNetsInGeneration.add(new NeuralNetwork(g));
         }
+
+        allNetsInGeneration.addAll(remainingNetsInGeneration);
 
         getNewCurrentNetwork();
 
@@ -231,6 +243,7 @@ public class Simulation extends Observable implements Observer, Serializable {
     private Object readResolve() throws ObjectStreamException {
         this.gameStats = GameStats.getInstance();
         this.remainingNetsInGeneration = new LinkedList<NeuralNetwork>();
+        this.allNetsInGeneration = new LinkedList<>();
         this.calculatedFitnesses = new HashMap<NeuralNetwork, Double>();
 
         putGenerationIntoQueue();
@@ -289,6 +302,28 @@ public class Simulation extends Observable implements Observer, Serializable {
     private void properlyNotify(Update_Args type) {
         setChanged();
         notifyObservers(type);
+    }
+
+    public void destroy() {
+        this.deleteObservers();
+        gameStats.deleteObserver(this);
+        gameStats.deleteObserver(this);
+    }
+
+    public static boolean isTrainingMode() {
+        return trainingMode;
+    }
+
+    public static void setTrainingMode(boolean trainingMode) {
+        Simulation.trainingMode = trainingMode;
+    }
+
+    public void setCurrent(NeuralNetwork current) {
+        this.current = current;
+    }
+
+    public LinkedList<NeuralNetwork> getNetsInCurrentGeneration() {
+        return allNetsInGeneration;
     }
 
     public TreeMap<Integer, HashMap<String, Double>> getHistoryMap() {

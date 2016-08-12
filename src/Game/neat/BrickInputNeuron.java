@@ -7,6 +7,8 @@ import java.io.Serializable;
  * Created by qfi_2 on 27.07.2016.
  */
 public class BrickInputNeuron extends Neuron implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private int i;
     private int j;
 

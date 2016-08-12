@@ -5,6 +5,7 @@ and all the methods to draw components to screen
 */
 
 import Game.UserInterface.NEATDiagnostics;
+import Game.neat.Simulation;
 
 import javax.swing.JPanel;
 import javax.swing.*;
@@ -65,9 +66,9 @@ public class Board extends JPanel
     }
 
     public void newLevel() {
+        gameStats.incrementLevel();
         gameInit();
         randomizeBricks();
-        gameStats.incrementLevel();
     }
 
     /**
@@ -506,14 +507,9 @@ public class Board extends JPanel
      */
     public void checkForVictory()
     {
-        if (gameStats.getScore() > GameStats.POINTS_TO_WIN_GAME) {
-            startNewGame();
-        }
-
         synchronized (bricks) {
             if (bricks.size() == 0) {
                 gameStats.setGameWon(true);
-                gameInit();
                 newLevel();
             }
         }
@@ -543,6 +539,7 @@ public class Board extends JPanel
 
     }
 
+
     /**
      * Key Listener.
      */
@@ -555,10 +552,12 @@ public class Board extends JPanel
 
         public void keyPressed(KeyEvent e)
         {
-            gameStats.getPaddle().keyPressed(e);
+            if (!gameStats.isSimulationMode()) {
+                gameStats.getPaddle().keyPressed(e);
+            }
             keyToStart(e);
 
-            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE && !gameStats.isSimulationMode()) {
                 pauseGame();
             }
         }

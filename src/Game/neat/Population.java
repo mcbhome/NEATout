@@ -8,6 +8,8 @@ import java.util.*;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Population implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private int gen_count = 0;
     private int conn_count = 1;
 

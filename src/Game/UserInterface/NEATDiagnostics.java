@@ -8,8 +8,11 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.io.*;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.*;
 
 /**
@@ -50,8 +53,13 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private JButton restartGenerationButton;
     private JPanel statisticsPane;
     private JTable statisticsTable;
+    private JCheckBox trainingCheckBox;
+    private JComboBox networkSelectionComboBox;
+    private JLabel networkDetailBallSpeedInput;
+    private JButton loadNetworkButton;
     private JFileChooser fileChooser;
-    private DefaultComboBoxModel comboModel;
+    private DefaultComboBoxModel networkDetailComboModel;
+    private DefaultComboBoxModel loadNetworkComboModel;
     private DefaultTableModel currentPopulationTableModel;
     private DefaultTableModel statisticsTableModel;
     private Simulation simulation;
@@ -212,7 +220,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
         networkDetailLoadID.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int id = Integer.parseInt((String) comboModel.getSelectedItem());
+                int id = Integer.parseInt((String) networkDetailComboModel.getSelectedItem());
                 Genome g = simulation.getPopulation().getGenomeById(id);
 
                 if (g != null) {
@@ -223,20 +231,49 @@ public class NEATDiagnostics extends JFrame implements Observer {
             }
         });
 
-        networkDetaiLoadCurrent.addActionListener(new ActionListener() {
+
+        trainingCheckBox.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if (trainingCheckBox.isSelected()) {
+                    loadNetworkButton.setEnabled(false);
+                    networkSelectionComboBox.setEnabled(false);
+                    restartGenerationButton.setEnabled(true);
+                    newPopulationButton.setEnabled(true);
+                    simulation.setTrainingMode(true);
+                } else {
+                    loadNetworkButton.setEnabled(true);
+                    networkSelectionComboBox.setEnabled(true);
+                    restartGenerationButton.setEnabled(false);
+                    newPopulationButton.setEnabled(false);
+                    simulation.setTrainingMode(false);
+                }
+
+                gameStats.resetGame();
+                pauseGame();
+            }
+        });
+
+        loadNetworkButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                curDetailGenome = simulation.getCurrent().getGenome();
-                updateLabels();
-                showCurrent = true;
+                int id = Integer.parseInt((String) networkSelectionComboBox.getSelectedItem());
+                for (NeuralNetwork n : simulation.getNetsInCurrentGeneration()) {
+                    if (id == n.getGenome().getId()) {
+                        simulation.setCurrent(n);
+                        gameStats.resetGame();
+                        pauseGame();
+                    }
+                }
             }
         });
 
         addButtonActionListeners();
 
-        gameStats.pauseGame();
-        pauseButton.setEnabled(false);
-        playButton.setEnabled(true);
+        trainingCheckBox.setSelected(true);
+        setTrainingMode(true);
+
+        pauseGame();
 
         setContentPane(mainPane);
         mainPane.setPreferredSize(new Dimension(960, 480));
@@ -255,14 +292,24 @@ public class NEATDiagnostics extends JFrame implements Observer {
         setVisible(true);
     }
 
+    private void pauseGame() {
+        gameStats.pauseGame();
+        playButton.setEnabled(true);
+        pauseButton.setEnabled(false);
+    }
+
+    private void unPauseGame() {
+        gameStats.unPauseGame();
+        playButton.setEnabled(false);
+        pauseButton.setEnabled(true);
+    }
+
     private void addButtonActionListeners() {
         playButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (gameStats.isGamePaused()) {
-                    gameStats.unPauseGame();
-                    playButton.setEnabled(false);
-                    pauseButton.setEnabled(true);
+                    unPauseGame();
                 }
             }
         });
@@ -271,9 +318,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!gameStats.isGamePaused()) {
-                    gameStats.pauseGame();
-                    playButton.setEnabled(true);
-                    pauseButton.setEnabled(false);
+                    pauseGame();
                 }
             }
         });
@@ -282,9 +327,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
             @Override
             public void actionPerformed(ActionEvent e) {
                 gameStats.resetGame();
-                gameStats.pauseGame();
-                playButton.setEnabled(true);
-                pauseButton.setEnabled(false);
+                pauseGame();
 
                 simulation.resetGeneration();
 
@@ -296,9 +339,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
             @Override
             public void actionPerformed(ActionEvent e) {
                 gameStats.resetGame();
-                gameStats.pauseGame();
-                playButton.setEnabled(true);
-                pauseButton.setEnabled(false);
+                pauseGame();
                 simulation.resetPopulation();
                 population = simulation.getPopulation();
                 updateUIComponents();
@@ -327,13 +368,15 @@ public class NEATDiagnostics extends JFrame implements Observer {
         sorter.setSortKeys(keys);
 
         Vector<String> vec = new Vector<String>();
+
         for (Genome g : simulation.getPopulation().getGenomes()) {
             vec.add("" + g.getId());
         }
 
-        comboModel = new DefaultComboBoxModel(vec);
+        networkDetailComboModel = new DefaultComboBoxModel(vec);
+        networkDetailComboBox = new JComboBox(networkDetailComboModel);
 
-        networkDetailComboBox = new JComboBox(comboModel);
+        networkSelectionComboBox = new JComboBox(networkDetailComboModel);
 
         mainPane = new JPanel();
 
@@ -377,11 +420,16 @@ public class NEATDiagnostics extends JFrame implements Observer {
         this.fillTables();
     }
 
+    private void setTrainingMode(boolean trainingMode) {
+        networkSelectionComboBox.setEnabled(!trainingMode);
+        loadNetworkButton.setEnabled(!trainingMode);
+    }
+
     private void updateComboBox() {
-        comboModel.removeAllElements();
+        networkDetailComboModel.removeAllElements();
 
         for (Genome g : population.getGenomes()) {
-            comboModel.addElement("" + g.getId());
+            networkDetailComboModel.addElement("" + g.getId());
         }
     }
 
@@ -413,6 +461,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
             networkDetailLayerCount.setText("" + curDetailGenome.getLayers());
             networkDetailBallInput.setText("" + nf.format(curDetailGenome.getBallInputNeuron().getInput()));
             networkDetailPaddleInput.setText("" + nf.format(curDetailGenome.getPaddleInputNeuron().getInput()));
+            networkDetailBallSpeedInput.setText("" + nf.format(curDetailGenome.getBallSpeedInputNeuron().getInput()));
         }
 
         if (gameStats.isGameStarted()) {
@@ -505,9 +554,11 @@ public class NEATDiagnostics extends JFrame implements Observer {
     }
 
     private void setSimulation(Simulation s) {
+        this.simulation.destroy();
         this.simulation = s;
         this.population = s.getPopulation();
         this.curDetailGenome = s.getCurrent().getGenome();
+        simulation.addObserver(this);
     }
 
     /**
@@ -520,9 +571,9 @@ public class NEATDiagnostics extends JFrame implements Observer {
     private void $$$setupUI$$$() {
         createUIComponents();
         mainPane = new JPanel();
-        mainPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(10, 10, 10, 10), -1, -1));
+        mainPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 4, new Insets(10, 10, 10, 10), -1, -1));
         networkPopulationTabbedPane = new JTabbedPane();
-        mainPane.add(networkPopulationTabbedPane, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(200, 200), null, 0, false));
+        mainPane.add(networkPopulationTabbedPane, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 4, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(200, 200), null, 0, false));
         populationPane = new JPanel();
         populationPane.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), 5, 5, true, false));
         networkPopulationTabbedPane.addTab("Population", populationPane);
@@ -621,7 +672,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
         panel4.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
         networkDetailPane.add(panel4, new com.intellij.uiDesigner.core.GridConstraints(1, 2, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
-        panel5.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(10, 10, 10, 10), -1, -1));
+        panel5.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(3, 2, new Insets(10, 10, 10, 10), -1, -1));
         panel4.add(panel5, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         panel5.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Inputs"));
         final JLabel label10 = new JLabel();
@@ -637,8 +688,14 @@ public class NEATDiagnostics extends JFrame implements Observer {
         networkDetailPaddleInput.setText("Label");
         panel5.add(networkDetailPaddleInput, new com.intellij.uiDesigner.core.GridConstraints(1, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JLabel label12 = new JLabel();
-        label12.setText("Network");
-        networkDetailPane.add(label12, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        label12.setText("BallSpeed");
+        panel5.add(label12, new com.intellij.uiDesigner.core.GridConstraints(2, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        networkDetailBallSpeedInput = new JLabel();
+        networkDetailBallSpeedInput.setText("Label");
+        panel5.add(networkDetailBallSpeedInput, new com.intellij.uiDesigner.core.GridConstraints(2, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label13 = new JLabel();
+        label13.setText("Network");
+        networkDetailPane.add(label13, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         networkDetailPane.add(networkDetailComboBox, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         networkDetaiLoadCurrent = new JButton();
         networkDetaiLoadCurrent.setText("Load Current");
@@ -675,6 +732,19 @@ public class NEATDiagnostics extends JFrame implements Observer {
         newPopulationButton.setText("");
         newPopulationButton.setToolTipText("Start with new population");
         toolBar.add(newPopulationButton);
+        final JToolBar.Separator toolBar$Separator1 = new JToolBar.Separator();
+        toolBar.add(toolBar$Separator1);
+        trainingCheckBox = new JCheckBox();
+        trainingCheckBox.setText("Training Mode");
+        toolBar.add(trainingCheckBox);
+        final JToolBar.Separator toolBar$Separator2 = new JToolBar.Separator();
+        toolBar.add(toolBar$Separator2);
+        toolBar.add(networkSelectionComboBox);
+        final com.intellij.uiDesigner.core.Spacer spacer1 = new com.intellij.uiDesigner.core.Spacer();
+        mainPane.add(spacer1, new com.intellij.uiDesigner.core.GridConstraints(0, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        loadNetworkButton = new JButton();
+        loadNetworkButton.setText("Load");
+        mainPane.add(loadNetworkButton, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     /**

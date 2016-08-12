@@ -8,6 +8,7 @@ import java.util.ArrayList;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Neuron implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     public enum Neuron_Type { BIAS, SENSOR_BRICK, SENSOR_PADDLE, SENSOR_BALL, SENSOR_BALL_SPEED, HIDDEN, OUTPUT_MOV}
 
@@ -15,7 +16,7 @@ public class Neuron implements Serializable {
     protected static int num_neurons = 0;
     protected transient double output;
     protected transient double input;
-    protected static final double SIGMOID_STEEPNESS = 5.0;
+    protected static final double SIGMOID_STEEPNESS = 1.0;
     protected ArrayList<Connection> successors;
     protected Neuron_Type type;
 

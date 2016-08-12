@@ -6,6 +6,8 @@ import java.io.Serializable;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Connection implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private Neuron in;
     private Neuron out;
     private double weight;

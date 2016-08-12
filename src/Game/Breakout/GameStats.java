@@ -3,6 +3,7 @@ package Game.Breakout;
 import Game.neat.Simulation;
 
 import java.util.Observable;
+import java.util.Random;
 
 /**
  * Created by qfi_2 on 26.07.2016.
@@ -13,7 +14,7 @@ public class GameStats extends Observable {
     private static final int START_LIVES = 1;
     private static final int POINTS_PER_BRICK = 100;
 
-    public static final int POINTS_TO_WIN_GAME = 10000;
+    public static final int LEVELS_NEEDED_TO_WIN = 5;
 
     public static final double MAX_BALL_SPEED = 2;
     public static final double MAX_PADDLE_SPEED = 3;
@@ -50,9 +51,10 @@ public class GameStats extends Observable {
         this.playerIsDead = false;
         this.score = 0;
         this.shots = 0;
-        this.level = 1;
+        this.level = 0;
         this.gameLost = false;
         this.gameWon = false;
+        newLevel();
         properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.NEW_GAME));
     }
 
@@ -81,11 +83,7 @@ public class GameStats extends Observable {
     public void brickHit(int i, int j) {
         this.score += POINTS_PER_BRICK;
         bricks[i][j] = false;
-        if (this.score > POINTS_TO_WIN_GAME) {
-            properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.GAME_WON));
-        } else {
-            properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.BRICK_CHANGE, i, j, false));
-        }
+        properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.BRICK_CHANGE, i, j, false));
     }
 
     public void incrementShots() {
@@ -176,6 +174,7 @@ public class GameStats extends Observable {
         properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.MOVEMENT));
     }
 
+
     public void setBrickState(int i, int j, boolean state) {
         bricks[i][j] = state;
         if (gameStarted) {
@@ -185,7 +184,12 @@ public class GameStats extends Observable {
 
     public void incrementLevel() {
         this.level++;
-        properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.MISC));
+        if (level <= LEVELS_NEEDED_TO_WIN) {
+            properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.MISC));
+        } else {
+            properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.GAME_WON));
+            newGame();
+        }
     }
 
     public void properlyNotify(Simulation.ObservableArg arg) {
@@ -241,6 +245,14 @@ public class GameStats extends Observable {
     public void unPauseGame() {
         this.inGame = true;
         this.gamePaused = false;
+    }
+
+    public boolean getBrickState(int i, int j){
+        return bricks[i][j];
+    }
+
+    public void newLevel() {
+        incrementLevel();
     }
 
     public void clearBricks() {

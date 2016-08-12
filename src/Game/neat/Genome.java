@@ -8,6 +8,8 @@ import java.util.*;
  * Created by qfi_2 on 25.07.2016.
  */
 public class Genome implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private static int numGenomes = 0;
 
     // This specifies if the brick array is taken into account
@@ -53,6 +55,10 @@ public class Genome implements Serializable {
     private Object readResolve() throws ObjectStreamException {
         this.fitness = 0;
         this.sharedFitness = 0;
+
+        if (this.id > numGenomes) {
+            numGenomes = this.id;
+        }
 
         return this;
     }
