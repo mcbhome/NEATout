@@ -1,5 +1,6 @@
 package Game.neat;
 
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +31,9 @@ public class Species implements Serializable {
 
     public void calculateSharedFitness() {
         for (Genome g : genomes) {
-            g.setSharedFitness(g.getFitness() / genomes.size());
+            if (g.isFitnessDetermined()) {
+                g.setSharedFitness(g.getFitness() / genomes.size());
+            }
         }
     }
 
@@ -125,4 +128,13 @@ public class Species implements Serializable {
     public static void resetSpeciesCount() {
         species_count = 0;
     }
+
+    private Object readResolve() throws ObjectStreamException {
+        if (this.getId() > species_count) {
+            species_count = this.getId();
+        }
+
+        return this;
+    }
+
 }

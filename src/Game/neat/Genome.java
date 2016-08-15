@@ -26,6 +26,7 @@ public class Genome implements Serializable {
     private ArrayList<Connection> connectionGenes;
     private transient double fitness;
     private transient double sharedFitness;
+    private transient boolean fitnessDetermined;
     private int highestInnov;
 
     private int layers;
@@ -39,7 +40,7 @@ public class Genome implements Serializable {
         highestInnov = 0;
         fitness = 0;
         sharedFitness = 0;
-
+        fitnessDetermined = false;
     }
 
     // Reset all neurons and fitness stats
@@ -47,14 +48,12 @@ public class Genome implements Serializable {
         for (Neuron n : nodeGenes) {
             n.reset();
         }
-
-        this.fitness = 0;
-        this.sharedFitness = 0;
     }
 
     private Object readResolve() throws ObjectStreamException {
         this.fitness = 0;
         this.sharedFitness = 0;
+        this.fitnessDetermined = false;
 
         if (this.id > numGenomes) {
             numGenomes = this.id;
@@ -128,6 +127,14 @@ public class Genome implements Serializable {
 
     public double getFitness() {
         return fitness;
+    }
+
+    public boolean isFitnessDetermined() {
+        return fitnessDetermined;
+    }
+
+    public void setFitnessDetermined(boolean fitnessDetermined) {
+        this.fitnessDetermined = fitnessDetermined;
     }
 
     public ArrayList<Connection> getConnectionGenes() {
@@ -218,6 +225,8 @@ public class Genome implements Serializable {
     public ArrayList<Neuron> getNodeGenes() {
         return this.nodeGenes;
     }
+
+
 
     public ArrayList<Neuron> getValidSourceNodeGenes() {
         ArrayList<Neuron> result = new ArrayList<>(this.nodeGenes);

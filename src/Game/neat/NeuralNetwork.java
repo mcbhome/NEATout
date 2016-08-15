@@ -76,6 +76,7 @@ public class NeuralNetwork implements Serializable {
 
         neuronQueue.add(paddleInputNeuron);
         neuronQueue.add(ballInputNeuron);
+        neuronQueue.add(ballSpeedInputNeuron);
         neuronQueue.add(biasNeuron);
 
         while (!neuronQueue.isEmpty()) {

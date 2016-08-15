@@ -10,13 +10,13 @@ Operating System running the program.
  */
 public class Commons
 {
-    private int brickWidth = 38;
-    private int brickHeight = 7;
-    private int paddleWidth = 60;
-    private int paddleHeight = 8;
-    private int width = 300;
-    private int height = 400;
-    private boolean inGame = false;
+    public static int brickWidth = 38;
+    public static int brickHeight = 7;
+    public static int paddleWidth = 60;
+    public static int paddleHeight = 8;
+    public static int width = 300;
+    public static int height = 400;
+    public boolean inGame = false;
 
     public int getHeight()
     {

@@ -1,4 +1,6 @@
 package Game.neat;
+import Game.Breakout.Ball;
+import Game.Breakout.Commons;
 import Game.Breakout.GameStats;
 import Game.Breakout.Paddle;
 
@@ -12,14 +14,16 @@ import java.util.*;
 public class Simulation extends Observable implements Observer, Serializable {
     private static final long serialVersionUID = 1L;
 
-    public enum Update_Args {PLAYER_DIED, BRICK_CHANGE, SCORE_CHANGED, MOVEMENT, MISC, NEW_GAME, BRICKS_RANDOMIZED, NEW_GENERATION, GAME_WON}
+    public enum Update_Args {PLAYER_DIED, BRICK_CHANGE, SCORE_CHANGED, MOVEMENT, MISC, NEW_GAME, BRICKS_RANDOMIZED, NEW_GENERATION, GAME_WON, BALL_HIT}
     public static final String TOP_FITNESS_KEY = "TOP_FITNESS";
     public static final String AVERAGE_FITNESS_KEY = "AVERAGE_FITNESS";
 
     private static boolean trainingMode = true;
 
     private static final double SCORE_FACTOR = 0.01;
-    private static final double SHOTS_FACTOR = 50.0;
+    private static final double SHOTS_FACTOR = 100.0;
+    private static final int SHOTS_BONUS_CEILING = 25;
+    private static final int SHOTS_TIMEOUT = 250;
 
     private Population p;
     private NeuralNetwork current;
@@ -71,10 +75,9 @@ public class Simulation extends Observable implements Observer, Serializable {
 
     private void enterDebugData() {
         for (Genome g : p.getGenomes()) {
-            Neuron n = new Neuron(Neuron.Neuron_Type.HIDDEN);
-            Neuron m = new Neuron(Neuron.Neuron_Type.HIDDEN);
 
-            g.addFromExistingConnection(new Connection(g.getBrickInputNeurons()[0][0], g.getMovOutputNeuron(), 1, 1, g));
+            g.addFromExistingConnection(new Connection(g.getPaddleInputNeuron(), g.getMovOutputNeuron(), 1, -1, g));
+            g.addFromExistingConnection(new Connection(g.getBallInputNeuron(), g.getMovOutputNeuron(), 2, 1, g));
         }
     }
 
@@ -100,10 +103,12 @@ public class Simulation extends Observable implements Observer, Serializable {
             } else if (type == Update_Args.NEW_GAME) {
                 initBrickInputsForCurrentNetwork();
             } else if (type == Update_Args.MOVEMENT) {
-                current.setPaddlePosition(gameStats.getPaddle().getXLeft());
-                current.setBallPosition(gameStats.getBall().getX());
-                current.setBallSpeed(gameStats.getBall().getHorizontalSpeed());
+                current.setPaddlePosition(getNormalizedPaddlePos());
+                current.setBallPosition(getNormalizedBallPos());
+                current.setBallSpeed(getNormalizedBallSpeed());
                 calculateOutputAndMovePaddle();
+            } else if (type == Update_Args.BALL_HIT) {
+                checkForTimeout();
             } else if(type == Update_Args.GAME_WON) {
                 if (trainingMode) {
                     finishSimulationForCurrentNetwork();
@@ -113,8 +118,43 @@ public class Simulation extends Observable implements Observer, Serializable {
         }
     }
 
+    private double getNormalizedBallSpeed() {
+        Ball ball = gameStats.getBall();
+        double speed = gameStats.MAX_BALL_SPEED;
+
+        return (ball.getHorizontalSpeed() + speed) / (speed) - 1;
+    }
+
+    private double getNormalizedPaddlePos() {
+        Paddle paddle = gameStats.getPaddle();
+        int width = paddle.getPWidth();
+        return (paddle.getXLeft() / (Commons.width - width)) * 2 - 1;
+    }
+
+    private double getNormalizedBallPos() {
+        Ball ball = gameStats.getBall();
+        int radius = ball.getRadius();
+        double res = ((ball.getX() - radius) / (Commons.width - 2 * radius)) * 2 - 1;
+
+        return res;
+    }
+
+    private void checkForTimeout() {
+        if (gameStats.getShots() > SHOTS_TIMEOUT) {
+            finishSimulationForCurrentNetwork();
+        }
+    }
+
     private void getNewCurrentNetwork() {
-        current = remainingNetsInGeneration.poll();
+        current = null;
+
+        while (current == null && !remainingNetsInGeneration.isEmpty()) {
+            current = remainingNetsInGeneration.poll();
+
+            if (current != null && current.getGenome().isFitnessDetermined()) {
+                current = null;
+            }
+        }
 
         if (current == null) {
             HashMap<String, Double> currentStatistics = historyMap.get(p.getGenerationId());
@@ -146,7 +186,7 @@ public class Simulation extends Observable implements Observer, Serializable {
     }
 
     public double calculateCurrentFitness() {
-        return gameStats.getShots() == 0 ? gameStats.getScore()  :  gameStats.getScore() / gameStats.getShots() + gameStats.getShots() * SHOTS_FACTOR;
+        return gameStats.getShots() == 0 ? gameStats.getScore()  :  gameStats.getScore() / gameStats.getShots() + Math.min(gameStats.getShots(), SHOTS_BONUS_CEILING) * SHOTS_FACTOR;
     }
 
     public void initBrickInputsForCurrentNetwork() {

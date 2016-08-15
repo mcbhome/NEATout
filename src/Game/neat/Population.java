@@ -2,6 +2,7 @@ package Game.neat;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -14,18 +15,18 @@ public class Population implements Serializable {
     private int conn_count = 1;
 
     private static final int POPULATION_SIZE = 30;
-    private static final int POPULATION_DENOMINATOR = 2;
+    private static final double SURVIVAL_THRESHOLD = 0.4;
 
-    private static final int MAXIMUM_STALENESS = 5;
+    private static final int MAXIMUM_STALENESS = 20;
 
-    private static final double COMPATIBILITY_THRESHOLD = 2;
+    private static final double COMPATIBILITY_THRESHOLD = 6;
     private static final double C1 = 2;
     private static final double C2 = 2;
-    private static final double C3 = 2;
+    private static final double C3 = 0.5;
 
     private static final double MUTATION_WEIGHT_BOUND = 3;
     private static final double WEIGHT_DECIMAL_STEP_SIZE = 0.01;
-    private static final double PERTURBATION_FACTOR_BOUND = 1.5;
+    private static final double PERTURBATION_FACTOR_BOUND = 2;
 
     private static final double NODE_MUTATE_CHANCE = 0.03;
     private static final double EDGE_MUTATE_CHANCE = 0.05;
@@ -87,7 +88,7 @@ public class Population implements Serializable {
         }*/
     }
 
-    public void newGeneration() {
+    public synchronized void newGeneration() {
         gen_id = gen_count++;
         cullSpecies();
 
@@ -115,7 +116,6 @@ public class Population implements Serializable {
             } else {
                 numOffspring = (int) ((s.getAverageFitness() / totalAverageFitness) * POPULATION_SIZE + 0.5);
             }
-
 
             while (s.getGenomes().size() > numOffspring) {
                 Genome g = s.getGenomes().get(0);
@@ -156,16 +156,22 @@ public class Population implements Serializable {
             sortIntoSpecies(g);
         }
 
-        for (Genome g: genomes) {
+        for (Genome g : genomes) {
             g.reset();
+        }
+
+        for (Species s : species) {
+            s.calculateSharedFitness();
         }
 
         fitnessUpdated = false;
     }
 
     private void cullSpecies() {
+        ArrayList<Species> speciesToRemove = new ArrayList<>();
+
         for (Species s : species) {
-            int numGenomesToRemove = s.getGenomes().size() / POPULATION_DENOMINATOR;
+            int numGenomesToRemove = (int) (s.getGenomes().size() * (1 - SURVIVAL_THRESHOLD));
             s.sortBySharedFitness();
             Genome toRemove;
 
@@ -176,7 +182,13 @@ public class Population implements Serializable {
                     genomes.remove(toRemove);
                 }
             }
+
+            if (s.getGenomes().size() == 0) {
+                speciesToRemove.add(s);
+            }
         }
+
+        species.removeAll(speciesToRemove);
     }
 
     // Remove all species but the top two
@@ -228,6 +240,7 @@ public class Population implements Serializable {
 
     public void updateFitness(Genome g, double fitness) {
         g.setFitness(fitness);
+        g.setFitnessDetermined(true);
         Species s = null;
 
         for (Species sp : species) {
@@ -329,6 +342,9 @@ public class Population implements Serializable {
 
                 parentB = genomes2.get(random.nextInt(genomes2.size()));
             } else {
+                if (genomes.size() == 0) {
+                    System.out.println();
+                }
                 parentB = genomes.get((random.nextInt(genomes.size())));
             }
 
@@ -537,8 +553,8 @@ public class Population implements Serializable {
 
     private void perturbEdges(Genome g) {
         for (Connection c : g.getConnectionGenes()) {
-            double factor = getRandomDoubleWithStepSize() * PERTURBATION_FACTOR_BOUND * 2 - PERTURBATION_FACTOR_BOUND;
-            double d = c.getWeight() * factor;
+            double addition = getRandomDoubleWithStepSize() * PERTURBATION_FACTOR_BOUND * 2 - PERTURBATION_FACTOR_BOUND;
+            double d = c.getWeight() + addition;
             c.setWeight(d);
         }
     }
@@ -571,6 +587,10 @@ public class Population implements Serializable {
         return top_fitness;
     }
 
+    public int getStaleness() {
+        return staleness;
+    }
+
     public ArrayList<Species> getSpecies() {
         return species;
     }
@@ -596,7 +616,7 @@ public class Population implements Serializable {
         return resultInnov;
     }
 
-    public Object readResolve() throws ObjectStreamException {
+    private Object readResolve() throws ObjectStreamException {
         this.staleness = 0;
         this.top_fitness = 0;
         this.random = new Random();

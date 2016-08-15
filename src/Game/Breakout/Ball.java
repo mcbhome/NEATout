@@ -24,8 +24,7 @@ public class Ball
      * @param  radius_
      * @return
      */
-    public Ball(int x_, int yTop_, int radius_)
-    {
+    public Ball(int x_, int yTop_, int radius_) {
         x = x_;
         yTop = yTop_;
         radius = radius_;

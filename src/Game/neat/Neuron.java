@@ -16,7 +16,7 @@ public class Neuron implements Serializable {
     protected static int num_neurons = 0;
     protected transient double output;
     protected transient double input;
-    protected static final double SIGMOID_STEEPNESS = 1.0;
+    protected static final double SIGMOID_STEEPNESS = 10.0;
     protected ArrayList<Connection> successors;
     protected Neuron_Type type;
 
@@ -40,7 +40,7 @@ public class Neuron implements Serializable {
     }
 
     public boolean isInputNeuron() {
-        return this.type == Neuron_Type.SENSOR_BRICK || this.type == Neuron_Type.SENSOR_PADDLE || this.type == Neuron_Type.SENSOR_BALL;
+        return this.type == Neuron_Type.SENSOR_BRICK || this.type == Neuron_Type.SENSOR_PADDLE || this.type == Neuron_Type.SENSOR_BALL || this.type == Neuron_Type.SENSOR_BALL_SPEED;
     }
 
     public boolean isOutputNeuron() {

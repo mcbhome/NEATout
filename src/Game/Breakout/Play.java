@@ -15,7 +15,7 @@ public class Play extends JFrame
     {
         Commons commons = new Commons();
 
-        add(new Board());
+        add(Board.getInstance());
         setTitle("Game.Breakout");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         getContentPane().setPreferredSize(new Dimension(300,400));

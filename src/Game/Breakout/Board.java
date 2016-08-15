@@ -23,13 +23,17 @@ public class Board extends JPanel
     private boolean skippedMainMenu = false;
     private GameStats gameStats;
     private Commons commons;
+    private int ballCollisionCount = 0;
+    private final int MAX_BALL_COLLISIONS = 3;
     private String bg = "../res/landingScreen.jpg";
+
+    private static Board instance;
 
 
     /**
      * Constructor. Configures refresh rate and initiates threads
      */
-    public Board()
+    private Board()
     {
         gameStats = GameStats.getInstance();
         gameInit();
@@ -41,6 +45,19 @@ public class Board extends JPanel
         timer.scheduleAtFixedRate(new ScheduleTask(), 100, 8);
     }
 
+    public static Board getInstance() {
+        if (instance == null)
+            instance = new Board();
+
+        return instance;
+    }
+
+    public void setSimSpeed(int i) {
+        timer.cancel();
+        timer.purge();
+        timer = new Timer();
+        timer.scheduleAtFixedRate(new ScheduleTask(), i, i);
+    }
     /**
      * Initializes game logic and variables
      * Bricks are initialized for the first
@@ -118,7 +135,7 @@ public class Board extends JPanel
      *
      * @param g
      */
-    public void drawGameState(Graphics g)
+    public synchronized void drawGameState(Graphics g)
     {
         Graphics2D g2 = (Graphics2D) g;
         drawPaddle(g2);
@@ -414,9 +431,14 @@ public class Board extends JPanel
     {
         if ((gameStats.getBall().ballAsEllipse()).intersects(gameStats.getPaddle().paddleAsRect()))
         {
-            gameStats.getBall().changeVerticalDirection();
-            adjustBallSpeedRelativeToPaddleIntersection();
-            gameStats.incrementShots();
+            ballCollisionCount++;
+            if (ballCollisionCount < MAX_BALL_COLLISIONS) {
+                gameStats.getBall().changeVerticalDirection();
+                adjustBallSpeedRelativeToPaddleIntersection();
+                gameStats.incrementShots();
+            }
+        } else {
+            ballCollisionCount = 0;
         }
         // If ball hits a brick, remove it
         brickCollisionDetection();
@@ -527,7 +549,7 @@ public class Board extends JPanel
         double pLeft = gameStats.getPaddle().getXLeft();
         double bLeft = gameStats.getBall().getX();
 
-        double newSpeed = -3 + ((bLeft - pLeft) / commons.getPWidth()) * gameStats.MAX_BALL_SPEED * 2;
+        double newSpeed = -1 * gameStats.MAX_BALL_SPEED + ((bLeft - pLeft) / commons.getPWidth()) * gameStats.MAX_BALL_SPEED * 2;
 
 
         // if we're in the middle, get random speed

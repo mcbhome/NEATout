@@ -88,7 +88,7 @@ public class GameStats extends Observable {
 
     public void incrementShots() {
         this.shots++;
-        properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.SCORE_CHANGED));
+        properlyNotify(new Simulation.ObservableArg(Simulation.Update_Args.BALL_HIT));
     }
 
     public void decrementLives() {
