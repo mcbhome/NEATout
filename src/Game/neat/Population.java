@@ -354,9 +354,6 @@ public class Population implements Serializable {
 
                 parentB = genomes2.get(random.nextInt(genomes2.size()));
             } else {
-                if (genomes.size() == 0) {
-                    System.out.println();
-                }
                 parentB = genomes.get((random.nextInt(genomes.size())));
             }
 
