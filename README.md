@@ -6,7 +6,7 @@ This repo currently provides a working NEAT implementation, including a serializ
 NEAT is an algorithm to evolve neural networks from a minimal state using an evolutionary approach. It features speciation, different kinds of mutation, fitness sharing and many other cool things.
 For more information on NEAT, read this paper: http://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf
 
-Should you decide to let the program learn the game, you should expect it to not deliver many valueable results for about 15 to 30 generations.
+Should you decide to let the program learn the game, you should expect it to not deliver many valueable results for about 15 to 30 generations. A network that is actually able to play Breakout may take from 10 up to a couple hundred generations, feel free to increase the simulation speed so things won't take as long.
 
 Please note that this source code was implemented with IntelliJ IDEA. If you want to compile this project from source, you should probably use it, especially since the user interface was generated with IDEA. When the project reaches a state where a functional version is existent, I can supply ready-to-run JARs and fully trained populations/networks.
 
