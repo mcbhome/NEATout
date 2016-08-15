@@ -337,7 +337,19 @@ public class Population implements Serializable {
             rnd = Math.random();
 
             if (rnd < INTERSPECIES_MATING_CHANCE) {
-                Species s2 = species.get(random.nextInt(species.size()));
+                LinkedList<Species> validSpecies = new LinkedList<>();
+
+                for (Species sp : species) {
+                    if (sp.getGenomes().size() > 0) {
+                        validSpecies.add(sp);
+                    }
+                }
+
+                if (validSpecies.size() == 0) {
+                    validSpecies.add(s);
+                }
+
+                Species s2 = species.get(random.nextInt(validSpecies.size()));
                 ArrayList<Genome> genomes2 = s2.getGenomes();
 
                 parentB = genomes2.get(random.nextInt(genomes2.size()));

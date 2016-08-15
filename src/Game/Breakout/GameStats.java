@@ -19,10 +19,11 @@ public class GameStats extends Observable {
     public static final double MAX_BALL_SPEED = 2;
     public static final double MAX_PADDLE_SPEED = 3;
 
-    boolean gameStarted;
-    boolean[][] bricks;
-    Paddle paddle;
-    Ball ball;
+    private boolean gameStarted;
+    private boolean[][] bricks;
+    private Paddle paddle;
+    private Ball ball;
+    private static Board board;
     private boolean gameWon;
     private boolean gameLost;
     private boolean inGame;
@@ -47,6 +48,9 @@ public class GameStats extends Observable {
     }
 
     public void newGame() {
+        if (board == null)
+            board = Board.getInstance();
+
         this.lives = START_LIVES;
         this.playerIsDead = false;
         this.score = 0;
@@ -253,6 +257,7 @@ public class GameStats extends Observable {
 
     public void newLevel() {
         incrementLevel();
+        board.randomizeBricks();
     }
 
     public void clearBricks() {

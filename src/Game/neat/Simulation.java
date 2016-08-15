@@ -140,8 +140,10 @@ public class Simulation extends Observable implements Observer, Serializable {
     }
 
     private void checkForTimeout() {
-        if (gameStats.getShots() > SHOTS_TIMEOUT) {
+        if (gameStats.getShots() > SHOTS_TIMEOUT && trainingMode) {
             finishSimulationForCurrentNetwork();
+            gameStats.gameInit();
+            gameStats.newGame();
         }
     }
 

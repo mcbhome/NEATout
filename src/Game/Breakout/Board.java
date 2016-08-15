@@ -76,7 +76,7 @@ public class Board extends JPanel
      */
     public void initStats() {
         gameStats.clearBricks();
-        randomizeBricks();
+        //randomizeBricks();
         gameStats.newGame();
         gameStats.setGamePaused(false);
         gameStats.setInGame(true);
