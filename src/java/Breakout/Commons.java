@@ -1,4 +1,4 @@
-package Game.Breakout;
+package Breakout;
 
 /**
 The Commons class contains all

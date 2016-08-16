@@ -1,8 +1,8 @@
-package Game.UserInterface;
+package UserInterface;
 
-import Game.Breakout.Board;
-import Game.Breakout.GameStats;
-import Game.neat.*;
+import Breakout.Board;
+import Breakout.GameStats;
+import neat.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -13,7 +13,6 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.*;
 import java.text.NumberFormat;
-import java.text.ParseException;
 import java.util.*;
 
 /**
@@ -759,22 +758,22 @@ public class NEATDiagnostics extends JFrame implements Observer {
         toolBar.setFloatable(false);
         mainPane.add(toolBar, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, 20), null, 0, false));
         playButton = new JButton();
-        playButton.setIcon(new ImageIcon(getClass().getResource("/Game/res/play24x24.png")));
+        playButton.setIcon(new ImageIcon(getClass().getResource("/UserInterface/play24x24.png")));
         playButton.setText("");
         playButton.setToolTipText("Start/Resume simulation");
         toolBar.add(playButton);
         pauseButton = new JButton();
-        pauseButton.setIcon(new ImageIcon(getClass().getResource("/Game/res/pause24x24.png")));
+        pauseButton.setIcon(new ImageIcon(getClass().getResource("/UserInterface/pause24x24.png")));
         pauseButton.setText("");
         pauseButton.setToolTipText("Pause simulation");
         toolBar.add(pauseButton);
         restartGenerationButton = new JButton();
-        restartGenerationButton.setIcon(new ImageIcon(getClass().getResource("/Game/res/restart24x24.png")));
+        restartGenerationButton.setIcon(new ImageIcon(getClass().getResource("/UserInterface/restart24x24.png")));
         restartGenerationButton.setText("");
         restartGenerationButton.setToolTipText("Restart simulation for current generation");
         toolBar.add(restartGenerationButton);
         newPopulationButton = new JButton();
-        newPopulationButton.setIcon(new ImageIcon(getClass().getResource("/Game/res/new24x24.png")));
+        newPopulationButton.setIcon(new ImageIcon(getClass().getResource("/UserInterface/new24x24.png")));
         newPopulationButton.setText("");
         newPopulationButton.setToolTipText("Start with new population");
         toolBar.add(newPopulationButton);

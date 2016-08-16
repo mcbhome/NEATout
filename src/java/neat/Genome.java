@@ -1,4 +1,4 @@
-package Game.neat;
+package neat;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
@@ -28,6 +28,7 @@ public class Genome implements Serializable {
     private transient double sharedFitness;
     private transient boolean fitnessDetermined;
     private int highestInnov;
+    private Species species;
 
     private int layers;
 
@@ -410,6 +411,14 @@ public class Genome implements Serializable {
             brickInputSize = brickInputs.length * brickInputs[0].length;
         }
         return nodeGenes.size() - brickInputSize + connectionGenes.size();
+    }
+
+    public Species getSpecies() {
+        return species;
+    }
+
+    public void setSpecies(Species species) {
+        this.species = species;
     }
 
     public Neuron getBiasNeuron() {

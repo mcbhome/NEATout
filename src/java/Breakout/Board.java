@@ -1,11 +1,10 @@
-package Game.Breakout; /**
+package Breakout; /**
 The Board class includes the game logic as well
 as game objects, such as the brick, paddle and ball,
 and all the methods to draw components to screen
 */
 
-import Game.UserInterface.NEATDiagnostics;
-import Game.neat.Simulation;
+import UserInterface.NEATDiagnostics;
 
 import javax.swing.JPanel;
 import javax.swing.*;
@@ -25,7 +24,7 @@ public class Board extends JPanel
     private Commons commons;
     private int ballCollisionCount = 0;
     private final int MAX_BALL_COLLISIONS = 3;
-    private String bg = "../res/landingScreen.jpg";
+    private String bg = "landingScreen.jpg";
 
     private static Board instance;
 
@@ -42,7 +41,7 @@ public class Board extends JPanel
         setBackground(Color.BLACK);
         setDoubleBuffered(true);
         timer = new Timer();
-        timer.scheduleAtFixedRate(new ScheduleTask(), 100, 8);
+        timer.scheduleAtFixedRate(new ScheduleTask(), 8, 8);
     }
 
     public static Board getInstance() {

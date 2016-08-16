@@ -1,4 +1,4 @@
-package Game.neat;
+package neat;
 
 import java.io.Serializable;
 import java.util.LinkedList;

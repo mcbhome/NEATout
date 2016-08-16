@@ -1,4 +1,4 @@
-package Game.neat;
+package neat;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
@@ -27,6 +27,7 @@ public class Species implements Serializable {
         genomes.add(representative);
         this.id = ++species_count;
         this.staleness = 0;
+        representative.setSpecies(this);
     }
 
     public void calculateSharedFitness() {
@@ -56,7 +57,15 @@ public class Species implements Serializable {
         });
     }
 
+    public void setFitness(Genome g, double d) {
+        if (d > this.topFitness) {
+            topFitness = d;
+        }
 
+        g.setFitness(d);
+        g.setSharedFitness(d / genomes.size());
+        g.setFitnessDetermined(true);
+    }
 
 
     public void calculateTotalFitness() {
@@ -87,6 +96,8 @@ public class Species implements Serializable {
         if (!genomes.contains(g)) {
             genomes.add(g);
         }
+
+        g.setSpecies(this);
     }
 
     public void setRepresentativeAndResetGenomes(Genome g) {
@@ -123,6 +134,10 @@ public class Species implements Serializable {
         } else {
             return false;
         }
+    }
+
+    public double getTopFitness() {
+        return topFitness;
     }
 
     public static void resetSpeciesCount() {

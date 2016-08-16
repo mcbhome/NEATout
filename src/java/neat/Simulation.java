@@ -1,8 +1,8 @@
-package Game.neat;
-import Game.Breakout.Ball;
-import Game.Breakout.Commons;
-import Game.Breakout.GameStats;
-import Game.Breakout.Paddle;
+package neat;
+import Breakout.Ball;
+import Breakout.Commons;
+import Breakout.GameStats;
+import Breakout.Paddle;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;

@@ -1,4 +1,4 @@
-package Game.neat;
+package neat;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
@@ -196,8 +196,8 @@ public class Population implements Serializable {
         Collections.sort(species, new Comparator<Species>() {
             @Override
             public int compare(Species o1, Species o2) {
-                double f1 = o1.getAverageFitness();
-                double f2 = o2.getAverageFitness();
+                double f1 = o1.getTopFitness();
+                double f2 = o2.getTopFitness();
 
                 if (f1 < f2)
                     return -1;
@@ -226,7 +226,6 @@ public class Population implements Serializable {
             if (dist < COMPATIBILITY_THRESHOLD) {
                 s.addGenome(g);
                 foundSpecies = true;
-
             }
 
             if (foundSpecies)
@@ -239,17 +238,8 @@ public class Population implements Serializable {
     }
 
     public void updateFitness(Genome g, double fitness) {
-        g.setFitness(fitness);
-        g.setFitnessDetermined(true);
-        Species s = null;
 
-        for (Species sp : species) {
-            if (sp.hasGenome(g)) {
-                s = sp;
-            }
-        }
-
-        g.setSharedFitness(fitness / s.getGenomes().size());
+        g.getSpecies().setFitness(g, fitness);
 
         if (fitness > top_fitness) {
             top_fitness = fitness;

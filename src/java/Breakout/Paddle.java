@@ -1,4 +1,4 @@
-package Game.Breakout; /**
+package Breakout; /**
 The paddle class contains the coordinates
 of the paddle as well as its horizontal speed.
  */

@@ -1,9 +1,8 @@
-package Game.Breakout;
+package Breakout;
 
-import Game.neat.Simulation;
+import neat.Simulation;
 
 import java.util.Observable;
-import java.util.Random;
 
 /**
  * Created by qfi_2 on 26.07.2016.
@@ -196,7 +195,7 @@ public class GameStats extends Observable {
         }
     }
 
-    public void properlyNotify(Simulation.ObservableArg arg) {
+    public void properlyNotify(neat.Simulation.ObservableArg arg) {
         setChanged();
         notifyObservers(arg);
     }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="Game.UserInterface.NEATDiagnostics">
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="UserInterface.NEATDiagnostics">
   <grid id="27dc6" binding="mainPane" layout-manager="GridLayoutManager" row-count="2" column-count="6" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="10" left="10" bottom="10" right="10"/>
     <constraints>
@@ -435,7 +435,7 @@
           <component id="b827d" class="javax.swing.JButton" binding="playButton">
             <constraints/>
             <properties>
-              <icon value="Game/res/play24x24.png"/>
+              <icon value="UserInterface/play24x24.png"/>
               <text value=""/>
               <toolTipText value="Start/Resume simulation"/>
             </properties>
@@ -443,7 +443,7 @@
           <component id="35fc8" class="javax.swing.JButton" binding="pauseButton">
             <constraints/>
             <properties>
-              <icon value="Game/res/pause24x24.png"/>
+              <icon value="UserInterface/pause24x24.png"/>
               <text value=""/>
               <toolTipText value="Pause simulation"/>
             </properties>
@@ -451,7 +451,7 @@
           <component id="f15b6" class="javax.swing.JButton" binding="restartGenerationButton">
             <constraints/>
             <properties>
-              <icon value="Game/res/restart24x24.png"/>
+              <icon value="UserInterface/restart24x24.png"/>
               <text value=""/>
               <toolTipText value="Restart simulation for current generation"/>
             </properties>
@@ -459,7 +459,7 @@
           <component id="92f87" class="javax.swing.JButton" binding="newPopulationButton">
             <constraints/>
             <properties>
-              <icon value="Game/res/new24x24.png"/>
+              <icon value="UserInterface/new24x24.png"/>
               <text value=""/>
               <toolTipText value="Start with new population"/>
             </properties>

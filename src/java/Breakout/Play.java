@@ -1,10 +1,10 @@
-package Game.Breakout; /**
+package Breakout; /**
 The Play class acts an entry point
 for the game. It initializes the contents
 and dimensions of the frame, sets its position
 relative to the screen and adds the Board component.
  */
-import Game.UserInterface.NEATDiagnostics;
+import UserInterface.NEATDiagnostics;
 
 import javax.swing.JFrame;
 import java.awt.*;
@@ -16,7 +16,7 @@ public class Play extends JFrame
         Commons commons = new Commons();
 
         add(Board.getInstance());
-        setTitle("Game.Breakout");
+        setTitle("Breakout");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         getContentPane().setPreferredSize(new Dimension(300,400));
         pack();
