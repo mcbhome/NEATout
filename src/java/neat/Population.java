@@ -14,7 +14,7 @@ public class Population implements Serializable {
     private int gen_count = 0;
     private int conn_count = 1;
 
-    private static final int POPULATION_SIZE = 30;
+    private static final int POPULATION_SIZE = 150;
     private static final double SURVIVAL_THRESHOLD = 0.4;
 
     private static final int MAXIMUM_STALENESS = 20;
