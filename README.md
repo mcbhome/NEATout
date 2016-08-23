@@ -1,4 +1,4 @@
-Breakout - NEAT
+Breakout + NEAT = NEATout
 ========
 
 This repo currently provides a working NEAT implementation, including a serialization mechanism for persistant solutions and a diagnostic user interface.
