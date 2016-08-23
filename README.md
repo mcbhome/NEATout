@@ -14,7 +14,7 @@ What's next?
 =
 - Documentation (ugh)
 - Creating a Swing-only UI without using any IntelliJ stuff (bigger ugh)
-- Afterwards: Uploading an executable .jar and example populations
+- Creating example population files
 
 Original Description
 =
