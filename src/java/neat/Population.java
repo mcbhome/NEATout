@@ -14,12 +14,12 @@ public class Population implements Serializable {
     private int gen_count = 0;
     private int conn_count = 1;
 
-    private static final int POPULATION_SIZE = 150;
+    private static final int POPULATION_SIZE = 90;
     private static final double SURVIVAL_THRESHOLD = 0.4;
 
     private static final int MAXIMUM_STALENESS = 20;
 
-    private static final double COMPATIBILITY_THRESHOLD = 6;
+    private static final double COMPATIBILITY_THRESHOLD = 5;
     private static final double C1 = 2;
     private static final double C2 = 2;
     private static final double C3 = 0.5;
@@ -31,6 +31,7 @@ public class Population implements Serializable {
     private static final double NODE_MUTATE_CHANCE = 0.03;
     private static final double EDGE_MUTATE_CHANCE = 0.05;
     private static final double EDGE_PERTURB_CHANCE = 0.9;
+    private static final double EDGE_DELETE_CHANCE = 0.2;
 
     private static final double MATE_CHANCE = 0.75;
     private static final double REACTIVATE_CONNECTION_CHANCE = 0.25;
@@ -63,14 +64,16 @@ public class Population implements Serializable {
     }
 
     public void initializePopulation(ArrayList<Neuron> inputOutputNeurons) {
-        while (genomes.size() < POPULATION_SIZE) {
+        List<Genome> genomesSync = Collections.synchronizedList(genomes);
+
+        while (genomesSync.size() < POPULATION_SIZE) {
             Genome g = new Genome(inputOutputNeurons);
 
             if (MUTATE_FIRST_GEN) {
                 mutate(g);
             }
 
-            genomes.add(g);
+            genomesSync.add(g);
         }
 
         /*for (Genome g : genomes) {
@@ -79,8 +82,10 @@ public class Population implements Serializable {
             }
         }*/
 
-        for (Genome g : genomes) {
-            sortIntoSpecies(g);
+        synchronized (genomesSync) {
+            for (Genome g : genomesSync) {
+                sortIntoSpecies(g);
+            }
         }
 
         /*for (int i = 0; i < 100; i++) {
@@ -92,103 +97,112 @@ public class Population implements Serializable {
         gen_id = gen_count++;
         cullSpecies();
 
+        List<Species> speciesSync = Collections.synchronizedList(species);
+        List<Genome> genomesSync = Collections.synchronizedList(genomes);
+
         if (!fitnessUpdated) {
             staleness++;
         }
 
-        ArrayList<Genome> offspring = new ArrayList<Genome>();
-        int genomeSize = genomes.size();
+        synchronized (speciesSync) {
+            ArrayList<Genome> offspring = new ArrayList<Genome>();
+            int genomeSize = genomesSync.size();
 
-        if (staleness >= MAXIMUM_STALENESS) {
-            stalenessCleanUp();
-        }
-
-        double totalAverageFitness = 0;
-
-        for (Species s : species) {
-            totalAverageFitness += s.getAverageFitness();
-        }
-
-        for (Species s : species) {
-            int numOffspring;
-            if (totalAverageFitness == 0) {
-                numOffspring = (int) ((double) POPULATION_SIZE / species.size() + 0.5);
-            } else {
-                numOffspring = (int) ((s.getAverageFitness() / totalAverageFitness) * POPULATION_SIZE + 0.5);
+            if (staleness >= MAXIMUM_STALENESS) {
+                stalenessCleanUp();
             }
 
-            while (s.getGenomes().size() > numOffspring) {
-                Genome g = s.getGenomes().get(0);
-                genomes.remove(g);
-                s.getGenomes().remove(g);
+            double totalAverageFitness = 0;
+
+            for (Species s : speciesSync) {
+                totalAverageFitness += s.getAverageFitness();
             }
 
-            int offspringProduced = s.getGenomes().size();
+            for (Species s : speciesSync) {
+                int numOffspring;
+                if (totalAverageFitness == 0) {
+                    numOffspring = (int) ((double) POPULATION_SIZE / speciesSync.size() + 0.5);
+                } else {
+                    numOffspring = (int) ((s.getAverageFitness() / totalAverageFitness) * POPULATION_SIZE + 0.5);
+                }
 
-            while (offspringProduced < numOffspring) {
-                offspring.add(produceOffspring(s));
-                offspringProduced++;
+                while (s.getGenomes().size() > numOffspring) {
+                    Genome g = s.getGenomes().get(0);
+                    genomesSync.remove(g);
+                    s.getGenomes().remove(g);
+                }
+
+                int offspringProduced = s.getGenomes().size();
+
+                while (offspringProduced < numOffspring) {
+                    offspring.add(produceOffspring(s));
+                    offspringProduced++;
+                }
             }
-        }
 
-        ArrayList<Species> toRemove = new ArrayList<>();
+            ArrayList<Species> toRemove = new ArrayList<>();
 
-        for (Species s : species) {
-            if (s.getGenomes().size() == 0) {
-                toRemove.add(s);
+            for (Species s : speciesSync) {
+                if (s.getGenomes().size() == 0) {
+                    toRemove.add(s);
+                }
             }
+
+            speciesSync.removeAll(toRemove);
+
+            ArrayList<Genome> genomesToSort = new ArrayList<>(genomesSync);
+
+            for (Species s : speciesSync) {
+                Genome rnd = s.getGenomes().get(random.nextInt(s.getGenomes().size()));
+                s.setRepresentativeAndResetGenomes(rnd);
+                genomesToSort.remove(rnd);
+            }
+
+            genomesSync.addAll(offspring);
+            genomesToSort.addAll(offspring);
+
+            for (Genome g : genomesToSort) {
+                sortIntoSpecies(g);
+            }
+
+            for (Genome g : genomesSync) {
+                g.reset();
+            }
+
+            for (Species s : speciesSync) {
+                s.calculateSharedFitness();
+            }
+
+            fitnessUpdated = false;
         }
-
-        species.removeAll(toRemove);
-
-        ArrayList<Genome> genomesToSort = new ArrayList<>(genomes);
-
-        for (Species s : species) {
-            Genome rnd = s.getGenomes().get(random.nextInt(s.getGenomes().size()));
-            s.setRepresentativeAndResetGenomes(rnd);
-            genomesToSort.remove(rnd);
-        }
-
-        genomes.addAll(offspring);
-        genomesToSort.addAll(offspring);
-
-        for (Genome g : genomesToSort) {
-            sortIntoSpecies(g);
-        }
-
-        for (Genome g : genomes) {
-            g.reset();
-        }
-
-        for (Species s : species) {
-            s.calculateSharedFitness();
-        }
-
-        fitnessUpdated = false;
     }
 
     private void cullSpecies() {
         ArrayList<Species> speciesToRemove = new ArrayList<>();
+        List<Species> speciesSync = Collections.synchronizedList(species);
+        List<Genome> genomesSync = Collections.synchronizedList(genomes);
 
-        for (Species s : species) {
-            int numGenomesToRemove = (int) (s.getGenomes().size() * (1 - SURVIVAL_THRESHOLD));
-            s.sortBySharedFitness();
-            Genome toRemove;
+        synchronized (speciesSync) {
+            for (Species s : speciesSync) {
+                int numGenomesToRemove = (int) (s.getGenomes().size() * (1 - SURVIVAL_THRESHOLD));
+                s.sortBySharedFitness();
+                Genome toRemove;
 
-            for (int i = 0; i < numGenomesToRemove; i++) {
-                if (s.getGenomes().size() > 1) {
-                    toRemove = s.getGenomes().get(0);
-                    s.getGenomes().remove(0);
-                    genomes.remove(toRemove);
+                for (int i = 0; i < numGenomesToRemove; i++) {
+                    if (s.getGenomes().size() > 1) {
+                        toRemove = s.getGenomes().get(0);
+                        s.getGenomes().remove(0);
+                        genomesSync.remove(toRemove);
+                    }
+                }
+
+                if (s.getGenomes().size() == 0) {
+                    speciesToRemove.add(s);
                 }
             }
 
-            if (s.getGenomes().size() == 0) {
-                speciesToRemove.add(s);
-            }
+            speciesSync.removeAll(speciesToRemove);
         }
-
-        species.removeAll(speciesToRemove);
     }
 
     // Remove all species but the top two
@@ -208,10 +222,13 @@ public class Population implements Serializable {
             }
         });
 
+        List<Species> speciesSync = Collections.synchronizedList(species);
+        List<Genome> genomesSync = Collections.synchronizedList(genomes);
+
         while (species.size() > 2) {
-            Species toRemove = species.get(0);
-            genomes.removeAll(toRemove.getGenomes());
-            species.remove(0);
+            Species toRemove = speciesSync.get(0);
+            genomesSync.removeAll(toRemove.getGenomes());
+            speciesSync.remove(0);
         }
 
         staleness = 0;
@@ -317,46 +334,51 @@ public class Population implements Serializable {
 
     private Genome produceOffspring(Species s) {
         double rnd = Math.random();
-        ArrayList<Genome> genomes = s.getGenomes();
+        List<Genome> genomes = Collections.synchronizedList(s.getGenomes());
 
-        if (rnd < MATE_CHANCE) {
-            Genome child;
-            Genome parentA = genomes.get(random.nextInt(genomes.size()));
-            Genome parentB;
+        synchronized (genomes) {
+            if (rnd < MATE_CHANCE) {
+                Genome child;
+                Genome parentA = genomes.get(random.nextInt(genomes.size()));
+                Genome parentB = null;
 
-            rnd = Math.random();
+                rnd = Math.random();
 
-            if (rnd < INTERSPECIES_MATING_CHANCE) {
-                LinkedList<Species> validSpecies = new LinkedList<>();
+                if (rnd < INTERSPECIES_MATING_CHANCE) {
+                    LinkedList<Species> validSpecies = new LinkedList<>();
 
-                for (Species sp : species) {
-                    if (sp.getGenomes().size() > 0) {
-                        validSpecies.add(sp);
+                    for (Species sp : species) {
+                        if (sp.getGenomes().size() > 0) {
+                            validSpecies.add(sp);
+                        }
                     }
+
+                    if (validSpecies.size() == 0) {
+                        validSpecies.add(s);
+                    }
+
+                    Species s2 = species.get(random.nextInt(validSpecies.size()));
+                    ArrayList<Genome> genomes2 = s2.getGenomes();
+                    if (genomes2.size() > 0) {
+                        parentB = genomes2.get(random.nextInt(genomes2.size()));
+                    } else {
+                        parentB = genomes.get(random.nextInt(genomes.size()));
+                    }
+                } else {
+                    parentB = genomes.get((random.nextInt(genomes.size())));
                 }
 
-                if (validSpecies.size() == 0) {
-                    validSpecies.add(s);
-                }
+                child = mate(parentA, parentB);
 
-                Species s2 = species.get(random.nextInt(validSpecies.size()));
-                ArrayList<Genome> genomes2 = s2.getGenomes();
+                mutate(child);
 
-                parentB = genomes2.get(random.nextInt(genomes2.size()));
+                return child;
             } else {
-                parentB = genomes.get((random.nextInt(genomes.size())));
+                Genome g = genomes.get(random.nextInt(genomes.size()));
+                Genome offspring = new Genome(g);
+                mutate(offspring);
+                return offspring;
             }
-
-            child = mate(parentA, parentB);
-
-            mutate(child);
-
-            return child;
-        } else {
-            Genome g = genomes.get(random.nextInt(genomes.size()));
-            Genome offspring = new Genome(g);
-            mutate(offspring);
-            return offspring;
         }
     }
 
@@ -500,6 +522,12 @@ public class Population implements Serializable {
 
         rnd = Math.random();
 
+        if (rnd < EDGE_DELETE_CHANCE) {
+            edgeDeleteMutation(g);
+        }
+
+        rnd = Math.random();
+
         if (rnd < EDGE_PERTURB_CHANCE) {
             perturbEdges(g);
         }
@@ -550,6 +578,13 @@ public class Population implements Serializable {
         }
     }
 
+    private void edgeDeleteMutation(Genome g) {
+        if (g.getConnectionGenes().size() > 0) {
+            Connection c = g.getConnectionGenes().get(random.nextInt(g.getConnectionGenes().size()));
+            g.deleteConnection(c);
+        }
+    }
+
     private void perturbEdges(Genome g) {
         for (Connection c : g.getConnectionGenes()) {
             double addition = getRandomDoubleWithStepSize() * PERTURBATION_FACTOR_BOUND * 2 - PERTURBATION_FACTOR_BOUND;
@@ -573,9 +608,13 @@ public class Population implements Serializable {
     }
 
     public Genome getGenomeById(int id) {
-        for (Genome g : genomes) {
-            if (g.getId() == id) {
-                return g;
+        List<Genome> genomesSync = Collections.synchronizedList(genomes);
+
+        synchronized (genomesSync) {
+            for (Genome g : genomesSync) {
+                if (g.getId() == id) {
+                    return g;
+                }
             }
         }
 

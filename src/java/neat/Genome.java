@@ -20,7 +20,7 @@ public class Genome implements Serializable {
     private BrickInputNeuron[][] brickInputs;
     private Neuron paddleInput;
     private Neuron ballInput;
-    private Neuron ballSpeedInput;
+    //private Neuron ballSpeedInput;
     private Neuron movOutput;
     private Neuron biasNeuron;
     private ArrayList<Connection> connectionGenes;
@@ -170,6 +170,22 @@ public class Genome implements Serializable {
         calculateDepths();
     }
 
+    public void refreshHighestInnov() {
+        sortConnectionGenes();
+
+        int maxInnov = 0;
+
+        for (Connection c : connectionGenes) {
+            int innov = c.getInnov();
+
+            if (innov > maxInnov) {
+                maxInnov = innov;
+            }
+        }
+
+        highestInnov = maxInnov;
+    }
+
     public int getHighestInnov() {
         return highestInnov;
     }
@@ -257,8 +273,8 @@ public class Genome implements Serializable {
                 this.biasNeuron = n;
                 this.nodeGenes.add(n);
             } else if (n.getType() == Neuron.Neuron_Type.SENSOR_BALL_SPEED) {
-                this.ballSpeedInput = n;
-                this.nodeGenes.add(n);
+                //this.ballSpeedInput = n;
+                //this.nodeGenes.add(n);
             } else if (n.getType() == Neuron.Neuron_Type.SENSOR_PADDLE) {
                 this.paddleInput = n;
                 this.nodeGenes.add(n);
@@ -327,7 +343,7 @@ public class Genome implements Serializable {
 
         res.add(paddleInput);
         res.add(ballInput);
-        res.add(ballSpeedInput);
+        //res.add(ballSpeedInput);
         res.add(movOutput);
         res.add(biasNeuron);
 
@@ -354,16 +370,9 @@ public class Genome implements Serializable {
         LinkedList<Neuron> curQueue = new LinkedList<Neuron>();
         LinkedList<Neuron> nextQueue = new LinkedList<Neuron>();
 
-        if (BRICK_INPUTS_ENABLED) {
-            for (int i = 0; i < brickInputs.length; i++) {
-                for (int j = 0; j < brickInputs[i].length; j++)
-                    curQueue.add(brickInputs[i][j]);
-            }
-        }
-
         curQueue.add(paddleInput);
         curQueue.add(ballInput);
-        curQueue.add(ballSpeedInput);
+        //curQueue.add(ballSpeedInput);
         curQueue.add(biasNeuron);
 
         int curDepth = 0;
@@ -425,11 +434,22 @@ public class Genome implements Serializable {
         return biasNeuron;
     }
 
-    public Neuron getBallSpeedInputNeuron() {
-        return ballSpeedInput;
-    }
+    //public Neuron getBallSpeedInputNeuron() {
+    //    return ballSpeedInput;
+    //}
 
     public static void resetGenomeCount() {
         numGenomes = 0;
+    }
+
+    public void deleteConnection(Connection c) {
+        connectionGenes.remove(c);
+        c.getIn().removeSuccessor(c);
+
+        if (c.getInnov() == highestInnov) {
+            refreshHighestInnov();
+        }
+
+        calculateDepths();
     }
 }

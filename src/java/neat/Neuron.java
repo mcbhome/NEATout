@@ -110,6 +110,11 @@ public class Neuron implements Serializable {
         successors.add(c);
     }
 
+    public void removeSuccessor(Connection c) {
+        successors.remove(c);
+    }
+
+
     public ArrayList<Connection> getSuccessors() {
         return this.successors;
     }

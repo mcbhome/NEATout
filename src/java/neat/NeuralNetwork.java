@@ -10,7 +10,7 @@ public class NeuralNetwork implements Serializable {
     private Neuron[][] brickInputNeurons;
     private Neuron paddleInputNeuron;
     private Neuron ballInputNeuron;
-    private Neuron ballSpeedInputNeuron;
+    //private Neuron ballSpeedInputNeuron;
     private Neuron movOutputNeuron;
     private Neuron biasNeuron;
     private Genome genome;
@@ -21,7 +21,7 @@ public class NeuralNetwork implements Serializable {
         this.brickInputNeurons = g.getBrickInputNeurons();
         this.paddleInputNeuron = g.getPaddleInputNeuron();
         this.ballInputNeuron = g.getBallInputNeuron();
-        this.ballSpeedInputNeuron = g.getBallSpeedInputNeuron();
+        //this.ballSpeedInputNeuron = g.getBallSpeedInputNeuron();
         this.movOutputNeuron = g.getMovOutputNeuron();
         this.biasNeuron = g.getBiasNeuron();
 
@@ -39,7 +39,7 @@ public class NeuralNetwork implements Serializable {
 
         paddleInputNeuron.setDepth(0);
         ballInputNeuron.setDepth(0);
-        ballSpeedInputNeuron.setDepth(0);
+        //ballSpeedInputNeuron.setDepth(0);
     }
 
     public void setBrickInput(int i, int j, boolean state) {
@@ -56,9 +56,9 @@ public class NeuralNetwork implements Serializable {
         ballInputNeuron.setInput(x);
     }
 
-    public void setBallSpeed(double x) {
-        ballSpeedInputNeuron.setInput(x);
-    }
+    //public void setBallSpeed(double x) {
+    //    ballSpeedInputNeuron.setInput(x);
+    //}
 
     public double getMovOutput() {
         return movOutputNeuron.getOutput();
@@ -76,7 +76,7 @@ public class NeuralNetwork implements Serializable {
 
         neuronQueue.add(paddleInputNeuron);
         neuronQueue.add(ballInputNeuron);
-        neuronQueue.add(ballSpeedInputNeuron);
+        //neuronQueue.add(ballSpeedInputNeuron);
         neuronQueue.add(biasNeuron);
 
         while (!neuronQueue.isEmpty()) {

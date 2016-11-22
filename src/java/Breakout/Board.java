@@ -11,6 +11,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.*;
 import java.awt.event.*;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.*;
@@ -66,7 +67,14 @@ public class Board extends JPanel
     public void gameInit()
     {
         commons = new Commons();
-        bricks = new ArrayList<Brick>();
+
+        if (bricks == null){
+            bricks = new ArrayList<>();
+        } else {
+            List<Brick> bricksSync = Collections.synchronizedList(bricks);
+            bricksSync.clear();
+        }
+
         gameStats.gameInit();
     }
 
@@ -346,13 +354,15 @@ public class Board extends JPanel
         //Rectangle brickRect[] = new Rectangle[40];
         ArrayList<Rectangle> brickRect;
         brickRect = new ArrayList<Rectangle>();
+        List<Brick> bricksSync = Collections.synchronizedList(bricks);
         int i = 0;
         g2.setColor(Color.WHITE);
-        synchronized (bricks) {
-            for (Brick a : bricks) {
-                brickRect.add(bricks.get(i).brickAsRect());
 
-                if (!bricks.get(i).isDestroyed()) {
+        synchronized (bricksSync) {
+            for (Brick a : bricksSync) {
+                brickRect.add(bricksSync.get(i).brickAsRect());
+
+                if (!bricksSync.get(i).isDestroyed()) {
                     g2.draw(brickRect.get(i));
                     g2.fill(brickRect.get(i));
                 }
@@ -360,7 +370,6 @@ public class Board extends JPanel
                 i++;
             }
         }
-
     }
 
     /**
@@ -405,17 +414,16 @@ public class Board extends JPanel
 
         Random r = new Random();
         int randomInt;
+        List<Brick> bricksSync = Collections.synchronizedList(bricks);
 
-        for (int i=20, k = 0; i < commons.getHeight()*0.4; i+=commons.getBHeight()+6, k++)
-        {
-            for (int j=10, l = 0; j<commons.getWidth()-15; j += commons.getBWidth()+5, l++)
-            {
-                randomInt = r.nextInt(2);
-                if (randomInt == 1 || (gameStats.isSimulationMode() && gameStats.getLevel() == 1)) {
-                    synchronized (bricks) {
-                        bricks.add(new Brick(j, i, new int[]{k, l}));
+        synchronized (bricksSync) {
+            for (int i = 20, k = 0; i < commons.getHeight() * 0.4; i += commons.getBHeight() + 6, k++) {
+                for (int j = 10, l = 0; j < commons.getWidth() - 15; j += commons.getBWidth() + 5, l++) {
+                    randomInt = r.nextInt(2);
+                    if (randomInt == 1 || (gameStats.isSimulationMode() && gameStats.getLevel() == 1)) {
+                        bricksSync.add(new Brick(j, i, new int[]{k, l}));
+                        gameStats.setBrickState(k, l, true);
                     }
-                    gameStats.setBrickState(k, l, true);
                 }
             }
         }
@@ -452,10 +460,12 @@ public class Board extends JPanel
     {
         int i = 0;
         //ArrayList copy to avoid ConcurrentModificationError
-        ArrayList<Brick> bricksCopy = new ArrayList<Brick>(bricks);
-        synchronized (bricks) {
+        List<Brick> bricksSync = Collections.synchronizedList(bricks);
+        ArrayList<Brick> bricksToRemove = new ArrayList();
+
+        synchronized (bricksSync) {
             boolean brickHit = false;
-            for (Brick a : bricks) {
+            for (Brick a : bricksSync) {
                 Brick current = a;
                 if ((gameStats.getBall().ballAsEllipse()).intersects(current.brickAsRect())) {
                     brickHit = true;
@@ -463,18 +473,13 @@ public class Board extends JPanel
                     int[] ids = current.getIds();
                     gameStats.brickHit(ids[0], ids[1]);
 
-                    try {
-                        bricksCopy.remove(a);
-                    } catch (Exception IndexOutOfBoundsException) {
-                    }
+                    bricksToRemove.add(a);
                 }
-
-                //i++;
             }
             if (brickHit) {
                 gameStats.getBall().changeVerticalDirection();
             }
-            bricks = bricksCopy;
+            bricksSync.removeAll(bricksToRemove);
         }
         checkForVictory();
     }
@@ -528,8 +533,9 @@ public class Board extends JPanel
      */
     public void checkForVictory()
     {
-        synchronized (bricks) {
-            if (bricks.size() == 0) {
+        List<Brick> bricksSync = Collections.synchronizedList(bricks);
+        synchronized (bricksSync) {
+            if (bricksSync.size() == 0) {
                 gameStats.setGameWon(true);
                 newLevel();
             }

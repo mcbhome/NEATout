@@ -500,7 +500,7 @@ public class NEATDiagnostics extends JFrame implements Observer {
             networkDetailLayerCount.setText("" + curDetailGenome.getLayers());
             networkDetailBallInput.setText("" + nf.format(curDetailGenome.getBallInputNeuron().getInput()));
             networkDetailPaddleInput.setText("" + nf.format(curDetailGenome.getPaddleInputNeuron().getInput()));
-            networkDetailBallSpeedInput.setText("" + nf.format(curDetailGenome.getBallSpeedInputNeuron().getInput()));
+            //networkDetailBallSpeedInput.setText("" + nf.format(curDetailGenome.getBallSpeedInputNeuron().getInput()));
         }
 
         if (gameStats.isGameStarted()) {

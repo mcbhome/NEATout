@@ -105,7 +105,7 @@ public class Simulation extends Observable implements Observer, Serializable {
             } else if (type == Update_Args.MOVEMENT) {
                 current.setPaddlePosition(getNormalizedPaddlePos());
                 current.setBallPosition(getNormalizedBallPos());
-                current.setBallSpeed(getNormalizedBallSpeed());
+                //current.setBallSpeed(getNormalizedBallSpeed());
                 calculateOutputAndMovePaddle();
             } else if (type == Update_Args.BALL_HIT) {
                 checkForTimeout();
@@ -188,7 +188,7 @@ public class Simulation extends Observable implements Observer, Serializable {
     }
 
     public double calculateCurrentFitness() {
-        return gameStats.getShots() == 0 ? gameStats.getScore()  :  gameStats.getScore() / gameStats.getShots() + Math.min(gameStats.getShots(), SHOTS_BONUS_CEILING) * SHOTS_FACTOR;
+        return gameStats.getShots() == 0 ? Math.max(0, gameStats.getScore() - current.getGenome().getActiveConnectionCount() * 10)  :  Math.max(0, gameStats.getScore() - current.getGenome().getActiveConnectionCount() * 10) / gameStats.getShots() + Math.min(gameStats.getShots(), SHOTS_BONUS_CEILING) * SHOTS_FACTOR;
     }
 
     public void initBrickInputsForCurrentNetwork() {
